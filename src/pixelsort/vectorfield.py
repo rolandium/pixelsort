@@ -66,24 +66,26 @@ class VectorField:
     def reset(self):
         self.field.fill(0)
 
-    def line_transform(self,x1,y1,x2,y2,strength,falloff,decay_type):
+    def line_transform(self,p1,p2,strength,falloff,decay_type="gaussian"):
         """
         Given a line with the starting point (x1,y1) and ending point (x2,y2),
         transforms the vector field's vectors in some proximity to the line
         to point towards the same direction the line is going, with a magnitude 
         according to strength and falloff.
 
-        :param (x1,y1): 
+        :param (x1,y1), p1: 
         the starting point of the line
-        :param (x2,y2): 
+        :param (x2,y2), p2: 
         the ending point of the line
         :param strength: 
-        the amount of influence applied to vectors on the line
+        the amount of influence applied to vectors close to the line
         :param falloff: 
         the maximum distance where the line still influences the field.
         :param  "linear", "gaussian", "exponential" decay_type: 
         the type of decay function to use for falloff
         """
+        (x1, y1) = p1
+        (x2, y2) = p2
         # line direction and length
         dx = x2 - x1
         dy = y2 - y1
@@ -109,8 +111,30 @@ class VectorField:
         self.apply_operation(operation)
         pass
 
-    def move_towards_point(self,target_x,target_y):
-        """Pull all vector endpoints on (x,y)"""
+    def spline_transform(self,p0,p1,p2,p3,num_samples,strength,falloff,decay_type="gaussian"):
+        """
+        Given a cubic bezier spline with the control points p0-p3, transform close vectors
+        in the field according to their distance to the spline, along with the strength parameter
+        and the falloff parameter.
+
+        :param (x,y), pX: 
+        control point of the cubic bezier spline
+        :param num_samples: 
+        the number of sampled points for the spline
+        :param strength: 
+        the amount of influence applied to vectors close to the line
+        :param falloff:
+        the maximum distance of the line's influence
+        :param  "linear", "gaussian", "exponential" decay_type: 
+        the type of decay function to use for falloff
+        """
+        #TODO: implement this
+        pass
+    def move_towards_point(self,point):
+        """
+        Pull all vector endpoints to (x,y)
+        """
+        (target_x, target_y) = point
         def towards_target(x,y,vector):
             dx = target_x - x
             dy = target_y - y
@@ -131,12 +155,24 @@ class VectorField:
         return hsv_array
 
     def output_hsv_image(self):
+        """
+        Output an image where the hue and value of a given pixel indicates
+        that pixel's direction and magnitude, respectively.
+        """
         max_magnitude = self.get_max_magnitiude()
         hsv_array = self.to_hsv_array(max_magnitude)
         print(hsv_array.shape)
         img = Image.fromarray(hsv_array,mode='HSV')
         print(f'img height:{img.height}, img width:{img.width}')
         img.show()
+
+    def output_arrow_image(self):
+        """
+        Output an image with arrows placed in a sparse grid that indicate
+        the average magnitude and direction at that point in the field.
+        """
+        # TODO: implement this
+        pass
 
     def __repr__(self):
         return f"VectorField(width={self.width}, height={self.height})"
