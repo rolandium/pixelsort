@@ -18,7 +18,10 @@ class Vector:
     def to_hsv(self,max_magnitude=1.0):
         angle_deg = np.degrees(self.direction) % 360
         hue = angle_deg / 360
-        value = np.clip(self.magnitude / max_magnitude, 0, 1)
+        if(self.magnitude == 0):
+            value = 0
+        else:
+            value = np.clip(self.magnitude / max_magnitude, 0, 1)
         saturation = 1.0
         return (hue,saturation,value)
     
@@ -63,17 +66,23 @@ class VectorField:
     def reset(self):
         self.field.fill(0)
 
-    def line_transform(self,x1,y1,x2,y2,strength,falloff):
+    def line_transform(self,x1,y1,x2,y2,strength,falloff,decay_type):
         """
         Given a line with the starting point (x1,y1) and ending point (x2,y2),
         transforms the vector field's vectors in some proximity to the line
         to point towards the same direction the line is going, with a magnitude 
         according to strength and falloff.
 
-        :param (x1,y1): the starting point of the line
-        :param (x2,y2): the ending point of the line
-        :param strength: the amount of influence applied to vectors on the line
-        :param falloff: the maximum distance where the line still influences the field.
+        :param (x1,y1): 
+        the starting point of the line
+        :param (x2,y2): 
+        the ending point of the line
+        :param strength: 
+        the amount of influence applied to vectors on the line
+        :param falloff: 
+        the maximum distance where the line still influences the field.
+        :param  "linear", "gaussian", "exponential" decay_type: 
+        the type of decay function to use for falloff
         """
         # line direction and length
         dx = x2 - x1
@@ -88,9 +97,14 @@ class VectorField:
             px = x - x1
             py = y - y1
             distance = abs(dx * py - dy * px) / line_length
-            weight = strength * max(0,1 - (distance/falloff))
+            if(decay_type == "exponential"):
+                weight = strength * np.exp(-(distance/falloff))
+            if(decay_type == "gaussian"):
+                weight = strength * np.exp(- (distance**2)/(2*falloff**2))
+            if(decay_type == "linear"):
+                weight = strength * max(0,1 - (distance/falloff))
             new_x = vector.x + ux * weight
-            new_y = vector.y + ux * weight
+            new_y = vector.y + uy * weight
             return Vector(new_x,new_y)
         self.apply_operation(operation)
         pass
