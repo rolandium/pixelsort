@@ -33,6 +33,7 @@ class GUI:
 
         :param image: The image to be drawn
         """
+        # TODO: will likely need to use dynamic texture
         pass
 
     def updateParameters(self):

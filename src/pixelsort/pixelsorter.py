@@ -60,7 +60,7 @@ class PixelSorter:
                 else:
                     if x_start is not None:
                         segment = arr[y,x_start:x]
-                        sorted_segment = sorted(segment, key=lambda px: rgb_to_hsv(px)[0])
+                        sorted_segment = sort_func(segment)
                         arr[y][x_start:x] = sorted_segment
                         x_start = None
         Image.fromarray(mask).show()
