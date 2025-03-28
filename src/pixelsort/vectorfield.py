@@ -1,4 +1,5 @@
 import numpy as np
+import scipy.ndimage as nd
 from PIL import Image
 
 class Vector:
@@ -66,6 +67,33 @@ class VectorField:
 
     def reset(self):
         self.field.fill(0)
+
+    def warp_image(self,image,initial_strength,decay,stop_threshold):
+        """
+        Given an image, transform the given image accordingly?
+        """
+        image_out = np.array(image)
+        height, width = image_out.shape[:2]
+        strength = initial_strength
+        while(strength >= stop_threshold):
+            image_current = np.zeros_like(image_out)
+            for y in range(height):
+                for x in range(width):
+                    vector = self.get_vector(x,y)
+                    dx = (x - strength * vector.x)
+                    dy = (y - strength * vector.y)
+                    # if y == int(height/2): print(f'x:{x} y:{y} dx: {dx}, dy:{dy}')
+                    # resulting coords in the current image
+                    # should be (x,y) + displacement
+                    # need to clamp the ending coords
+                    # for now just discard them
+                    if(0 <= dy < height and 0 <= dx < width):
+                        image_current[y,x] = image_out[int(dy),int(dx)]
+                        pass
+            image_out = image_current
+            strength *= decay
+        return image_out
+            
 
     def line_transform(self,p1,p2,strength,falloff,decay_type="gaussian"):
         """
