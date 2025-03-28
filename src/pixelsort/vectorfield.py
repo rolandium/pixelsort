@@ -1,5 +1,6 @@
 import numpy as np
 from PIL import Image
+
 class Vector:
     def __init__(self,x=0.0,y=0.0):
         self.x = x
@@ -109,7 +110,21 @@ class VectorField:
             new_y = vector.y + uy * weight
             return Vector(new_x,new_y)
         self.apply_operation(operation)
-        pass
+
+    # formula from https://stackoverflow.com/a/4091430
+    def _cubic_bezier(t,p0,p1,p2,p3):
+        p0 = np.array(p0)
+        p1 = np.array(p1)
+        p2 = np.array(p2)
+        p3 = np.array(p3)
+        return (1-t)**3 * p0 + 3*t*(1-t)**2*p1 + 3*t**2*(1-t)*p2 + t**3*p3
+
+    def _cubic_bezier_derivative(t,p0,p1,p2,p3):
+        p0 = np.array(p0)
+        p1 = np.array(p1)
+        p2 = np.array(p2)
+        p3 = np.array(p3)
+        return -3*(1-t)**2*p0 + 3*(1-t)**2*p1 - 6*t*(1-t)*p1 - 3*t**2*p2 + 6*t*(1-t)*p2 + 3*t**2*p3
 
     def spline_transform(self,p0,p1,p2,p3,num_samples,strength,falloff,decay_type="gaussian"):
         """
@@ -128,8 +143,38 @@ class VectorField:
         :param  "linear", "gaussian", "exponential" decay_type: 
         the type of decay function to use for falloff
         """
-        #TODO: implement this
-        pass
+        def cubic_bezier(t,p0,p1,p2,p3):
+            p0 = np.array(p0)
+            p1 = np.array(p1)
+            p2 = np.array(p2)
+            p3 = np.array(p3)
+            return (1-t)**3 * p0 + 3*t*(1-t)**2*p1 + 3*t**2*(1-t)*p2 + t**3*p3
+        def cubic_bezier_derivative(t,p0,p1,p2,p3):
+            p0 = np.array(p0)
+            p1 = np.array(p1)
+            p2 = np.array(p2)
+            p3 = np.array(p3)
+            return -3*(1-t)**2*p0 + 3*(1-t)**2*p1 - 6*t*(1-t)*p1 - 3*t**2*p2 + 6*t*(1-t)*p2 + 3*t**2*p3
+        t_values = np.linspace(0,1,num_samples)
+        samples = [cubic_bezier(t,p0,p1,p2,p3) for t in t_values]
+        tangents = [cubic_bezier_derivative(t,p0,p1,p2,p3) for t in t_values]
+        def operation(x,y,vector):
+            point = np.array([x,y])
+            distances = [np.linalg.norm(point - sample) for sample in samples]
+            min_index = np.argmin(distances)
+            distance = distances[min_index]
+            if(decay_type == "exponential"):
+                weight = strength * np.exp(-(distance/falloff))
+            if(decay_type == "gaussian"):
+                weight = strength * np.exp(- (distance**2)/(2*falloff**2))
+            if(decay_type == "linear"):
+                weight = strength * max(0,1 - (distance/falloff))
+            tangent = tangents[min_index]
+            new_x = vector.x + tangent[0] * weight
+            new_y = vector.y + tangent[1] * weight
+            return Vector(new_x,new_y)
+        self.apply_operation(operation)
+
     def move_towards_point(self,point):
         """
         Pull all vector endpoints to (x,y)
