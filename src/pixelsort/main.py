@@ -1,8 +1,8 @@
 from PIL import Image
 import numpy as np
-from pixelsort.gui import GUI
-from pixelsort.pixelsorter import PixelSorter
-from pixelsort.vectorfield import VectorField
+from gui import GUI
+from pixelsorter import PixelSorter
+from vectorfield import VectorField
 
 def main():
     # ps = PixelSorter()
