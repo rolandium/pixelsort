@@ -6,11 +6,11 @@ from pixelsort.vectorfield import VectorField
 
 def main():
     mountainIm = Image.open('/home/roland/pixelsort/src/pixelsort/mountains.png').convert("RGB")
-    # ps = PixelSorter()
-    # ps.image = Image.open('/home/roland/pixelsort/src/pixelsort/lenna.png').convert("RGB")
-    # print(np.array(ps.image).shape)
-    # sorted = ps.sortImage()
-    # sorted.show()
+    gui = GUI()
+    #ps.image = Image.open('src/pixelsort/mountains.png').convert("RGB")
+    #print(np.array(ps.image).shape)
+    #sorted = ps.sortImage(80, 160)
+    #sorted.show()
     w = mountainIm.width
     h = mountainIm.height
     vf = VectorField(w,h)
@@ -36,6 +36,8 @@ def main():
     vf.output_hsv_image()
     im = Image.fromarray(vf.warp_image(mountainIm,1,0.5,0.2))
     im.show()
+from gui import GUI
+from pixelsorter import PixelSorter
 
 if __name__ == "__main__":
     main()
