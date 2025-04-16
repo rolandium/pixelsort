@@ -81,8 +81,11 @@ def main():
                 prev_pos = positions[t-1,y,x]
                 if np.isnan(prev_pos[0]) or np.isnan(prev_pos[1]):
                     continue # ignore pixel
-                dx = t
-                dy = -t
+                # rate of change 
+                # i.e a line defined by y = mx+b
+                # will need its derivative
+                dx = 1
+                dy = 2*t/5
                 new_pos = prev_pos + np.array([dy,dx])
                 positions[t,y,x] = new_pos
 
@@ -134,6 +137,10 @@ def main():
                     j = i / num_samples
                     pos = pos1 * (1 - j) + pos2 * j
                     accumulate_bilinear(accum_color,accum_weight, pos, rgba, weight=1.0/(num_steps-1))
+        # todo: render inbetweens, save to local data structure
+        # in the form of np.ndarray (timestep x (width height, 3 {rgb}))
+        # will need to put the normalization routine in here instead.
+        # final output will be the end of the output "block"
 
     # normalize the accumulated weights
     canvas = np.zeros_like(accum_color)
