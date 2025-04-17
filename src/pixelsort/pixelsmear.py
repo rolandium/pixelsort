@@ -1,12 +1,14 @@
 import numpy as np
+from math import sin
 from PIL import Image
 from PIL import ImageOps
+class PixelsMear:
 
 THRESHOLD = (70,100)
 
-IMG_PATH = r"C:\Users\roland\Desktop\cmpt461\pixelsort\src\pixelsort\mountains.png"
-MASK_PATH = r"C:\Users\roland\Desktop\cmpt461\pixelsort\results\mask.png"
-OUT_PATH = r"C:\Users\roland\Desktop\cmpt461\pixelsort\results\out.png"
+IMG_PATH = r"/Users/yizhoulu/Documents/GitHub/pixelsort/src/pixelsort/lenna.png"
+MASK_PATH = r"/Users/yizhoulu/Documents/GitHub/pixelsort/src/pixelsort/mask.png"
+OUT_PATH = r"/Users/yizhoulu/Documents/GitHub/pixelsort/src/pixelsort/out.png"
 
 def getValue(pixel):
     # assuming R G B
@@ -49,6 +51,7 @@ def accumulate_bilinear(accum_color, accum_weight,pos,color,weight=1.0):
     accum_weight[y0,x1] += w01 * weight
     accum_weight[y1,x0] += w10 * weight
     accum_weight[y1,x1] += w11 * weight
+
     
 def main():
     image = Image.open(IMG_PATH).convert("RGB")
@@ -99,12 +102,27 @@ def main():
             max_col = image_np[y,x]
             for t in range(1, num_steps):
                 pos = positions[t,y,x]
+                # eps = 1e-6
+                # pos_y = np.clip(pos[0], 0, height - 1 - eps)
+                # pos_x = np.clip(pos[1], 0, width - 1 - eps)
+                # y0 = int(np.floor(pos_y))
+                # x0 = int(np.floor(pos_x))
+                # pixel = image_np[y0, x0]
+
+                # Instead of finding the nearest floor pixel, find the pixel round it
+                h, w = image_np.shape[:2]
                 eps = 1e-6
                 pos_y = np.clip(pos[0], 0, height - 1 - eps)
                 pos_x = np.clip(pos[1], 0, width  - 1 - eps)
-                y0 = int(np.floor(pos_y))
-                x0 = int(np.floor(pos_x))
-                pixel = image_np[y0, x0]
+                pos_y0 = int(np.floor(pos_y))
+                pos_x0 = int(np.floor(pos_x))
+                pos_y1 = min(pos_y0 + 1, h - 1)
+                pos_x1 = min(pos_x0 + 1, w - 1)
+                pos_dy = pos_y - pos_y0
+                pos_dx = pos_x - pos_x0
+                top_pixels = (1 - pos_dx) * image_np[pos_y0, pos_x0] + pos_dx * image_np[pos_y0, pos_x1]
+                bottom_pixels = (1 - pos_dx) * image_np[pos_y1, pos_x0] + pos_dx * image_np[pos_y1, pos_x1]
+                pixel = (1 - pos_dy) * bottom_pixels + pos_dy * top_pixels
                 if(getValue(min_col) > getValue(pixel)):
                     min_col = pixel
                 if(getValue(max_col) < getValue(pixel)):
