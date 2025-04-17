@@ -1,6 +1,6 @@
 import numpy as np
-import scipy.ndimage as nd
 from PIL import Image
+import cv2
 
 class Vector:
     def __init__(self,y=0.0,x=0.0):
@@ -98,6 +98,12 @@ class VectorField:
         self.magnitudes = data["magnitudes"]
         self.height, self.width = data["vectors"].shape[:2]
 
+    def resize(self, height,width):
+        """
+        Resizes the vector field to be of the desired height and width.
+        """
+        # TODO: complete this function 
+        pass
 
     def apply_operation(self,func):
         """
@@ -164,18 +170,39 @@ class VectorField:
             return Vector(ny,nx), ng
         self.apply_operation(operation)
 
-    def move_towards_point(self,point):
+    def move_towards_point(self,point,radius):
         """
-        Pull all vector endpoints to (y,x)
+        Pull all vector endpoints within the radius to (y,x)
         """
         (target_y, target_x) = point
-        maxdist = np.hypot(self.height/2,self.width/2)
         def towards_target(y,x,vector,mag):
             dy = target_y - y
             dx = target_x - x
-            dist = np.hypot(dy,dx) / maxdist
-            return Vector(dy,dx), dist
+            dist = np.hypot(dx,dy)
+            if(dist > radius):
+                return vector, mag
+            
+            return Vector(dy,dx), dist / radius
         self.apply_operation(towards_target)
+
+    def spiral_transform(self, point, radius, spiral_strength=0.01):
+        (target_y, target_x) = point
+        def turn(y,x,vector,mag):
+            dx = x - target_x
+            dy = y - target_y
+            angle = np.arctan2(dy,dx)
+            angle += spiral_strength*np.sqrt(dx**2 + dy**2)
+            magnitude = np.exp(-((dx**2 + dy**2) / radius**2))
+            return Vector(np.sin(angle),np.cos(angle)), magnitude
+        self.apply_operation(turn)
+
+    def wave_transform(self, freq_y, freq_x):
+        def waves(y,x,vector,mag):
+            dy = np.sin(freq_y * y)
+            dx = np.cos(freq_x * x)
+            m = 1
+            return Vector(dy,dx), m
+        self.apply_operation(waves)
 
     def to_hsv_array(self,max_magnitude=1.0):
         hsv = np.zeros((self.height,self.width, 3), dtype=np.uint8)
