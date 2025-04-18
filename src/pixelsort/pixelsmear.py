@@ -2,6 +2,8 @@ import numpy as np
 from math import sin, exp
 from PIL import Image
 from PIL import ImageOps
+from pixelsort.vectorfield import VectorField
+
 class PixelSmear:
     #initialize threshold (70, 100) and num_step = 10
     def __init__(self, img_path, out_path, mask_path=None, threshold=(70, 100), num_steps=10,dx_expr="1", dy_expr="2*t/5"):
@@ -30,6 +32,10 @@ class PixelSmear:
         self.dy_expr = dy_expr
         self.dx_func = self.string_to_function(dx_expr)
         self.dy_func = self.string_to_function(dy_expr)
+
+        # vector field input
+        self.vf = VectorField(0,0)
+        self.usingVF = False
 
     #Expression: string to a function
     def string_to_function(self, expression: str):
@@ -92,8 +98,13 @@ class PixelSmear:
 
         for t in range(1, self.num_steps):
             print(f"warping: t={t + 1}/{self.num_steps}", end='\r', flush=True)
-            dx = float(self.dx_func(t))
-            dy = float(self.dy_func(t))
+            if(self.usingVF):
+                v = self.vf.get_vector(y,x)
+                dx = v.x
+                dy = v.y
+            else:
+                dx = float(self.dx_func(t))
+                dy = float(self.dy_func(t))
             for y in range(self.height):
                 for x in range(self.width):
                     if not self.mask[y, x]:
@@ -209,11 +220,11 @@ class PixelSmear:
 
 if __name__ == "__main__":
     smear = PixelSmear(
-        img_path="/Users/yizhoulu/Documents/GitHub/pixelsort/src/pixelsort/lenna.png",
-        out_path="/Users/yizhoulu/Documents/GitHub/pixelsort/src/pixelsort/out.png",
-        mask_path="/Users/yizhoulu/Documents/GitHub/pixelsort/src/pixelsort/mask.png",
+        img_path="/Users/roland/Desktop/cmpt461/pixelsort/src/pixelsort/mountains.png",
+        out_path="/Users/roland/Desktop/cmpt461/pixelsort/src/pixelsort/out.png",
+        mask_path="/Users/roland/Desktop/cmpt461/pixelsort/src/pixelsort/mask.png",
         threshold=(70, 100),
-        num_steps=10,
+        num_steps=25,
         dx_expr="1",
         dy_expr="2 * t / 5"
     )
