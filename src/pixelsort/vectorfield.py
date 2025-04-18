@@ -1,6 +1,7 @@
 import numpy as np
-from PIL import Image
-import cv2
+from PIL import Image, ImageDraw
+import colorsys
+import cv2 as cv
 
 class Vector:
     def __init__(self,y=0.0,x=0.0):
@@ -69,40 +70,53 @@ class VectorField:
         self.vectors.fill(0.0)
         self.magnitudes.fill(0.0)
 
-    def save(self, path, fileName, writeImage: bool = False):
+    def save(self, file_path, write_image: bool = False):
         """
         Saves the current vector field to a .npz file.
         The file can be loaded in with the load() function
 
-        @param path: The output directory to save the file, ending with a slash
-        @param fileName: The name of the output file, without any extension
-        @param writeImage: If true, writes the HSV image representation to [fileName].png
+        @param file_path: The output directory to save the file, without the extension
+        @param write_image: If true, writes the HSV image representation to [fileName].png
         """
-        np.savez(path + fileName + ".npz", 
+        np.savez(file_path + ".npz", 
                  vectors = self.vectors, 
                  magnitudes = self.magnitudes)
-        if(writeImage):
-            hsv = self.to_hsv_array()
-            img = Image.fromarray(hsv, mode='HSV').convert('RGB')
-            img.save(path + fileName + ".png")
+        if(write_image):
+            # hsv = self.to_hsv_array()
+            #img = Image.fromarray(hsv, mode='HSV').convert('RGB')
+            img = self.output_arrow_image(show_image=False,hue=False)
+            img.save(file_path + ".png")
 
-    def load(self,filePath):
+    def load(self,file_path):
         """
         Loads in the specified .npz file, replacing the contents of self
         in the process.
 
         @param filePath: The full path of the .npz file, including the extension.
         """
-        data = np.load(filePath)
+        data = np.load(file_path)
         self.vectors = data["vectors"]
         self.magnitudes = data["magnitudes"]
         self.height, self.width = data["vectors"].shape[:2]
 
-    def resize(self, height,width):
+    def resize(self, new_height, new_width):
         """
         Resizes the vector field to be of the desired height and width.
         """
-        # TODO: complete this function 
+        uy = self.vectors[:,:,0]
+        ux = self.vectors[:,:,1]
+        uy2 = cv.resize(uy, (new_width,new_height), interpolation=cv.INTER_CUBIC)
+        ux2 = cv.resize(ux, (new_width,new_height), interpolation=cv.INTER_CUBIC)
+        m2 = cv.resize(self.magnitudes, (new_width,new_height), interpolation=cv.INTER_CUBIC)
+
+        # TODO: see if vectors and magnitudes need be normalized/clamped
+
+        vectors2 = np.stack((uy2,ux2), axis=-1).astype(np.float32)
+        magnitudes2 = m2.astype(np.float32)
+        self.vectors = vectors2
+        self.magnitudes = magnitudes2
+        self.height = new_height
+        self.width = new_width
         pass
 
     def apply_operation(self,func):
@@ -204,6 +218,29 @@ class VectorField:
             return Vector(dy,dx), m
         self.apply_operation(waves)
 
+    def orbit_transform(self, center=None, clockwise=False):
+        if(center is None):
+            target_y = self.height / 2
+            target_x = self.width / 2
+        else:
+            target_y, target_x = center
+        max_dist = np.hypot(max(target_y, self.height - target_y), max(target_x, self.width - target_x))
+        def orbit(y,x,vector,mag):
+            dy = target_y - y
+            dx = target_x - x
+            dist = np.hypot(dy,dx)
+            if dist == 0:
+                return Vector(0.0,0.0), 0.0
+            # tangent direction to the vector to mid:
+            # ccw: (-dx, +dy) cw: (+dx, - y)
+            if clockwise:
+                ny, nx = dx, -dy
+            else:
+                ny, nx = -dx, dy
+            nm = dist / max_dist
+            return Vector(ny,nx), nm
+        self.apply_operation(orbit)
+
     def to_hsv_array(self,max_magnitude=1.0):
         hsv = np.zeros((self.height,self.width, 3), dtype=np.uint8)
         for y in range(self.height):
@@ -223,14 +260,63 @@ class VectorField:
         hsv = self.to_hsv_array()
         img = Image.fromarray(hsv, mode='HSV').convert('RGB')
         img.show()
+        return img
 
-    def output_arrow_image(self):
+    def output_arrow_image(self, show_image=True, hue=True, stride=16, line_length=16, base_width=4, tip_width=0):
         """
         Output an image with arrows placed in a sparse grid that indicate
-        the average magnitude and direction at that point in the field.
+        the magnitude and direction at that point in the field.
+
+        @param show_image: if true, displays the image when finished rendering
+        @param hue: if true, paints each arrow its relevant hue value. false=white
+        @param stride: the interval in pixels between arrows
+        @param line_length: the maximum length of an arrow (scaled with magnitude)
+        @param base_width: the maximum base width of an arrrow
+        @param tip_width: the maximum tip width of an arrow
         """
-        # TODO: implement this
-        pass
+        if(hue):
+            hsv = self.to_hsv_array()
+        img = Image.new('RGB',(self.width,self.height))
+        draw = ImageDraw.Draw(img)
+
+        # from https://stackoverflow.com/a/24852375
+        def hsv2rgb(h,s,v):
+            return tuple(int(round(i * 255)) for i in colorsys.hsv_to_rgb(h/255,s/255,v/255))
+
+        for y in range(0, self.height, stride):
+            for x in range(0, self.width, stride):
+                vy, vx = self.vectors[y,x]
+                m = self.magnitudes[y,x]
+                if m <= 0:
+                    continue
+                length = m * line_length
+                x0, y0 = x, y
+                x1 = x0 + vx * length
+                y1 = y0 + vy * length
+
+                d_norm = np.hypot(vx, vy)
+                if d_norm == 0:
+                    continue
+                ux = vx / d_norm
+                uy = vy / d_norm
+                px, py = -uy, ux
+
+                wb = base_width / 2.0
+                wt = tip_width / 2.0
+
+                base_left = (x0 + px*wb, y0 + py*wb)
+                base_right = (x0 - px*wb, y0 - py*wb)
+                tip_left = (x1 + px*wt, y1 + py*wt)
+                tip_right = (x1 - px*wt, y1 - py*wt) # at tip_width 0 these two are the same
+                poly = [base_left, base_right, tip_right, tip_left]
+
+                if(hue):
+                    color = hsv2rgb(hsv[y,x,0],hsv[y,x,1],hsv[y,x,2])
+                else:
+                    color = 'white'
+                draw.polygon(poly,fill=color)
+        img.show()
+        return img
 
     def __repr__(self):
         return f"VectorField(width={self.width}, height={self.height})"
