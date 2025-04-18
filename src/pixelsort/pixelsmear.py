@@ -1,10 +1,10 @@
 import numpy as np
-from math import sin
+from math import sin, exp
 from PIL import Image
 from PIL import ImageOps
 class PixelSmear:
     #initialize threshold (70, 100) and num_step = 10
-    def __init__(self, img_path, out_path, mask_path=None, threshold=(70, 100), num_steps=10):
+    def __init__(self, img_path, out_path, mask_path=None, threshold=(70, 100), num_steps=10,dx_expr="1", dy_expr="2*t/5"):
         self.img_path = img_path
         self.out_path = out_path
         self.mask_path = mask_path
@@ -19,6 +19,23 @@ class PixelSmear:
         self.colors = np.zeros((self.num_steps, self.height, self.width, 3), dtype=np.float32)
         self.accum_color = np.zeros((self.height, self.width, 4), dtype=np.float32)
         self.accum_weight = np.zeros((self.height, self.width), dtype=np.float32)
+
+        # outputs
+        self.frames = []  # composited PIL frames (RGBA)
+        self.frame_stack = None
+        self.smear_stack = None
+
+        #dx and dy expression and dx dy function initialize
+        self.dx_expr = dx_expr
+        self.dy_expr = dy_expr
+        self.dx_func = self.string_to_function(dx_expr)
+        self.dy_func = self.string_to_function(dy_expr)
+
+    #Expression: string to a function
+    def string_to_function(self, expression: str):
+        def func(t):
+            return eval(expression, {"__builtins__": {}}, {"t": t})
+        return np.frompyfunc(func, 1, 1)
 
     def getValue(self, pixel):
         # assuming R G B
@@ -66,6 +83,7 @@ class PixelSmear:
         self.accum_weight[y1, x0] += w10 * weight
         self.accum_weight[y1, x1] += w11 * weight
 
+
     def warp_positions(self, mask):
         for y in range(self.height):
             for x in range(self.width):
@@ -74,18 +92,18 @@ class PixelSmear:
 
         for t in range(1, self.num_steps):
             print(f"warping: t={t + 1}/{self.num_steps}", end='\r', flush=True)
+            dx = float(self.dx_func(t))
+            dy = float(self.dy_func(t))
             for y in range(self.height):
                 for x in range(self.width):
-                    prev_pos = self.positions[t - 1, y, x]
-                    if np.isnan(prev_pos[0]) or np.isnan(prev_pos[1]):
-                        continue  # ignore pixel
+                    if not self.mask[y, x]:
+                        continue
+                    prev = self.positions[t - 1, y, x]
+                    self.positions[t, y, x] = prev + np.array([dy, dx])
+                     # ignore pixel
                     # rate of change
                     # i.e a line defined by y = mx+b
                     # will need its derivative
-                    dx = 1
-                    dy = 2 * t / 5
-                    new_pos = prev_pos + np.array([dy, dx])
-                    self.positions[t, y, x] = new_pos
 
     # color smear step
     def smear_colors(self):
@@ -130,39 +148,56 @@ class PixelSmear:
 
     # rendering step, using rgba for transparency
     def render(self):
+        STEP_SIZE = 1.0
+        smear_frames = []
+        canvas = np.zeros_like(self.accum_color)
         for t in range(self.num_steps - 1):
+            self.accum_color.fill(0)
+            self.accum_weight.fill(0)
             for y in range(self.height):
                 for x in range(self.width):
                     pos1 = self.positions[t, y, x]
-                    if np.isnan(pos1[0]) or np.isnan(pos1[1]):
-                        continue
                     pos2 = self.positions[t + 1, y, x]
+                    if np.any(np.isnan(pos1)) or np.any(np.isnan(pos2)):
+                        continue
                     rgb = self.colors[t, y, x]
                     rgba = np.array([*rgb, 1.0], dtype=np.float32)
-                    length = np.linalg.norm(pos2 - pos1)
-                    num_samples = max(1, int(np.ceil(length)))
-                    for i in range(num_samples + 1):
-                        j = i / num_samples
-                        pos = pos1 * (1 - j) + pos2 * j
-                        self.accumulate_bilinear(pos, rgba, weight=1.0 / (self.num_steps - 1))
 
-        canvas = np.zeros_like(self.accum_color)
-        for y in range(self.height):
-            for x in range(self.width):
-                if self.accum_weight[y, x] > 0:
-                    canvas[y, x] = self.accum_color[y, x] / self.accum_weight[y, x]
-        # todo: render inbetweens, save to local data structure
-        # in the form of np.ndarray (timestep x (width height, 3 {rgb}))
-        # will need to put the normalization routine in here instead.
-        # final output will be the end of the output "block"
+                    delta = pos2 - pos1
+                    length = np.linalg.norm(delta)
+                    if length < 1e-6:
+                        continue
 
-        # normalize the accumulated weights
-        canvas[..., :3] = np.clip(canvas[..., :3], 0, 255)
-        canvas[..., 3] = np.clip(canvas[..., 3], 0, 1) * 255
-        out = canvas.astype(np.uint8)
-        out_im = Image.fromarray(out, mode="RGBA")
-        out_im.show()
-        out_im.save(self.out_path)
+                    if length > 15:
+                        delta = (pos2 - pos1) / length * 5  # shorten it
+                        pos2 = pos1 + delta
+                        length = 5
+
+                    n_steps = max(1, int(np.ceil(length / STEP_SIZE)))
+                    steps = delta / n_steps
+
+                    # Use linspace instead of manual interpolation
+                    for pos in range(n_steps + 1):
+                        self.accumulate_bilinear(pos1 + steps * pos, rgba, weight=1.0 / ((self.num_steps - 1) * n_steps))
+
+            valid = self.accum_weight > 0
+            canvas[valid] = self.accum_color[valid] / self.accum_weight[valid, None]
+            smear_rgb = np.clip(canvas[..., :3], 0, 255).astype(np.float32)
+            smear_frames.append(smear_rgb.copy())
+
+            # Composite with original image
+            rgba_clip = canvas.copy()
+            rgba_clip[..., :3] = np.clip(rgba_clip[..., :3], 0, 255)
+            rgba_clip[..., 3] = np.clip(rgba_clip[..., 3], 0, 1) * 255
+            frame_rgba = rgba_clip.astype(np.uint8)
+            comp = Image.alpha_composite(self.image.convert("RGBA"), Image.fromarray(frame_rgba, 'RGBA'))
+            self.frames.append(comp)
+            comp.save(self.out_path.replace('.png', f'_frame_{t:02d}.png'))
+
+        self.smear_stack = np.stack(smear_frames)
+        self.frame_stack = np.stack([np.asarray(f) for f in self.frames])
+        # smear.frames[t] to get certain t slides composited image
+
 
     #run Pixelsmear
     def run(self):
@@ -178,6 +213,8 @@ if __name__ == "__main__":
         out_path="/Users/yizhoulu/Documents/GitHub/pixelsort/src/pixelsort/out.png",
         mask_path="/Users/yizhoulu/Documents/GitHub/pixelsort/src/pixelsort/mask.png",
         threshold=(70, 100),
-        num_steps=10
+        num_steps=10,
+        dx_expr="1",
+        dy_expr="2 * t / 5"
     )
     smear.run()
