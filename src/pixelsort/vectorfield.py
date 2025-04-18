@@ -136,7 +136,9 @@ class VectorField:
                     self.vectors[y,x] = (0.0,0.0)
                 self.magnitudes[y,x] = np.clip(new_mag, 0.0, 1.0)
 
-    
+
+# -------- TRANSFORMATIONS -------------#
+
 
     def line_transform(self,p1,p2,strength,falloff,decay_type="gaussian"):
         """
@@ -184,7 +186,7 @@ class VectorField:
             return Vector(ny,nx), ng
         self.apply_operation(operation)
 
-    def move_towards_point(self,point,radius):
+    def move_towards_point(self,point,falloff):
         """
         Pull all vector endpoints within the radius to (y,x)
         """
@@ -193,13 +195,46 @@ class VectorField:
             dy = target_y - y
             dx = target_x - x
             dist = np.hypot(dx,dy)
-            if(dist > radius):
-                return vector, mag
-            
-            return Vector(dy,dx), dist / radius
+            if(dist == 0):
+                return Vector(0,0), 0
+            m = max(0.0, dist / falloff)
+            return Vector(dy,dx), m
         self.apply_operation(towards_target)
 
-    def spiral_transform(self, point, radius, spiral_strength=0.01):
+    def move_away_from_point(self,point,falloff):
+        """
+        Push all vector endpoints within the radius from (y,x)
+        """
+        (target_y, target_x) = point
+        def away(y,x,vector,mag):
+            dy = target_y - y
+            dx = target_x - x
+            dist = np.hypot(dx,dy)
+            if(dist == 0):
+                return Vector(0,0), 0
+            m = max(0.0, 1 - dist / falloff)
+            return Vector(-dy,-dx), m
+        self.apply_operation(away)
+
+    def spiral_transform(self,center):
+        phi = (1 + np.sqrt(5))/2
+        b = np.log(phi) / (np.pi/2)
+        target_x, target_y = center
+        def spiral(y, x, vector, mag):
+            dy = target_y - y
+            dx = target_x - x
+            theta = np.arctan2(dy,dx)
+            tx = b * np.cos(theta) - np.sin(theta)
+            ty = b * np.sin(theta) + np.cos(theta)
+            norm = np.hypot(ty,tx)
+            if(norm > 0):
+                ty /= norm
+                tx /= norm
+            m = 1
+            return Vector(ty,tx), m
+        self.apply_operation(spiral)
+
+    def chaotic_spiral_transform(self, point, radius, spiral_strength=0.01):
         (target_y, target_x) = point
         def turn(y,x,vector,mag):
             dx = x - target_x
@@ -210,10 +245,16 @@ class VectorField:
             return Vector(np.sin(angle),np.cos(angle)), magnitude
         self.apply_operation(turn)
 
-    def wave_transform(self, freq_y, freq_x):
+    def wave_transform(self, freq, amplitude):
+        """
+        Make every column of vectors in the field
+        follow the same sine wave tangents
+        """
         def waves(y,x,vector,mag):
-            dy = np.sin(freq_y * y)
-            dx = np.cos(freq_x * x)
+            slope = amplitude * freq * np.cos(freq * x)
+            norm = np.hypot(1.0,slope)
+            dy = slope / norm
+            dx = 1.0 / norm
             m = 1
             return Vector(dy,dx), m
         self.apply_operation(waves)
@@ -240,6 +281,10 @@ class VectorField:
             nm = dist / max_dist
             return Vector(ny,nx), nm
         self.apply_operation(orbit)
+
+    
+# -------- VISUALIZATIONS -------------#
+
 
     def to_hsv_array(self,max_magnitude=1.0):
         hsv = np.zeros((self.height,self.width, 3), dtype=np.uint8)

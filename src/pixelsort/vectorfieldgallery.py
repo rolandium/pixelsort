@@ -49,10 +49,17 @@ def vfg_make_and_save(gen_fn, name):
     vf.save(path,True)
     pass
 
-def vfg_gen_towardsmiddle(vf:VectorField) -> VectorField:
+def vfg_gen_collapse(vf:VectorField) -> VectorField:
     middle = (vf.height/2,vf.width/2)
     max_dist = np.hypot(middle[0],middle[1])
     vf.move_towards_point(middle,max_dist)
+    return vf
+
+def vfg_gen_explosion(vf:VectorField) -> VectorField:
+    middle = (vf.height/2, vf.width/2)
+    middle = (vf.height/2,vf.width/2)
+    max_dist = np.hypot(middle[0],middle[1])*2
+    vf.move_away_from_point(middle,max_dist)
     return vf
 
 def vfg_gen_borderrun(vf:VectorField) -> VectorField:
@@ -70,6 +77,28 @@ def vfg_gen_borderrun(vf:VectorField) -> VectorField:
     vf.line_transform(tl,bl,strength,v_falloff,mode) # left edge
     vf.line_transform(bl,br,strength,h_falloff,mode) # bottom edge
     vf.line_transform(br,tr,strength,v_falloff,mode) # right edge
+    return vf
+
+def vfg_gen_plus(vf:VectorField) -> VectorField:
+    hm = vf.height/2
+    wm = vf.width/2
+    strength = 1
+    falloff = max(vf.height,vf.width)/20
+    mode = "exponential"
+    vf.line_transform((hm,0),(hm,vf.width),strength,falloff,mode)
+    vf.line_transform((0,wm),(vf.height,wm),strength,falloff,mode)
+    return vf
+
+def vfg_gen_cross(vf:VectorField) -> VectorField:
+    tl = (0,0)
+    tr = (0,vf.width)
+    bl = (vf.height,0)
+    br = (vf.height,vf.width)
+    strength = 1
+    falloff = max(vf.height,vf.width)/20
+    mode = "exponential"
+    vf.line_transform(tl,br,strength,falloff,mode)
+    vf.line_transform(tr,bl,strength,falloff,mode)
     return vf
 
 def vfg_gen_eightstar(vf:VectorField) -> VectorField:
@@ -92,24 +121,32 @@ def vfg_gen_eightstar(vf:VectorField) -> VectorField:
 
 def vfg_gen_spiral(vf:VectorField) -> VectorField:
     middle = (vf.height/2,vf.width/2)
+    vf.spiral_transform(middle)
+    return vf
+
+def vfg_gen_chaotic_spiral(vf:VectorField) -> VectorField:
+    middle = (vf.height/2,vf.width/2)
     max_dist = np.hypot(middle[0],middle[1])
-    vf.spiral_transform(middle,max_dist,spiral_strength=0.01)
+    vf.chaotic_spiral_transform(middle,max_dist,spiral_strength=0.01)
     return vf
 
 def vfg_gen_orbit(vf:VectorField) -> VectorField:
     vf.orbit_transform()
     return vf
 
-# TODO: change frequencies to produce a better field
 def vfg_gen_wave(vf:VectorField) -> VectorField:
-    vf.wave_transform(0.005,0.05)
+    vf.wave_transform(0.025,40)
     return vf
 
 if __name__ == "__main__":
     # generate all vector fields and save them into the vector_fields folder
-    #vfg_make_and_save(vfg_gen_towardsmiddle,"towards_middle")
-    vfg_make_and_save(vfg_gen_borderrun,"border_run")
+    vfg_make_and_save(vfg_gen_collapse,"collapse")
+    vfg_make_and_save(vfg_gen_explosion,"explosion")
+    vfg_make_and_save(vfg_gen_borderrun,"border")
+    vfg_make_and_save(vfg_gen_plus,"plus")
+    vfg_make_and_save(vfg_gen_cross,"cross")
     vfg_make_and_save(vfg_gen_eightstar,"star")
-    #vfg_make_and_save(vfg_gen_spiral,"spiral")
-    #vfg_make_and_save(vfg_gen_orbit,"orbit")
+    vfg_make_and_save(vfg_gen_spiral,"spiral")
+    vfg_make_and_save(vfg_gen_chaotic_spiral,"chaotic_spiral")
+    vfg_make_and_save(vfg_gen_orbit,"orbit")
     vfg_make_and_save(vfg_gen_wave,"wave")
