@@ -108,6 +108,7 @@ class PixelSmear:
 
         for t in range(1, self.num_steps):
             print(f"warping: t={t + 1}/{self.num_steps}", end='\r', flush=True)
+            self.progress += (t/self.num_steps)/3
             dx = float(self.dx_func(t))
             dy = float(self.dy_func(t))
             for y in range(self.height):
@@ -134,6 +135,7 @@ class PixelSmear:
     # color smear step
     def smear_colors(self):
         for y in range(self.height):
+            self.progress += (y/self.height)/3
             print(f"smearing: y={y}/{self.height}", end='\r', flush=True)
             for x in range(self.width):
                 if np.any(np.isnan(self.positions[0, y, x])):
@@ -182,7 +184,7 @@ class PixelSmear:
         smear_frames = []
         canvas = np.zeros_like(self.accum_color)
         for t in range(self.num_steps - 1):
-            self.progress += t/self.num_steps
+            self.progress += (t/self.num_steps)/3
             self.accum_color.fill(0)
             self.accum_weight.fill(0)
             for y in range(self.height):
@@ -232,10 +234,12 @@ class PixelSmear:
 
     #run Pixelsmear
     def run(self):
+        self.progress = 0.0
         mask = self.generate_mask()
         self.warp_positions(mask)
         self.smear_colors()
         self.render()
+        self.progress = 1.0
 
 
 if __name__ == "__main__":
