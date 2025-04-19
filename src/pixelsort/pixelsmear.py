@@ -37,6 +37,8 @@ class PixelSmear:
         self.vf = VectorField(0,0)
         self.usingVF = False
 
+        self.progress = 0.0
+
     #Expression: string to a function
     def string_to_function(self, expression: str):
         def func(t):
@@ -180,6 +182,7 @@ class PixelSmear:
         smear_frames = []
         canvas = np.zeros_like(self.accum_color)
         for t in range(self.num_steps - 1):
+            self.progress += t/self.num_steps
             self.accum_color.fill(0)
             self.accum_weight.fill(0)
             for y in range(self.height):
@@ -247,4 +250,7 @@ if __name__ == "__main__":
         dx_expr="2",
         dy_expr="2"
     )
+    smear.usingVF = True
+    smear.vf = VectorField(smear.height,smear.width)
+    smear.vf.chaotic_spiral_transform()
     smear.run()
