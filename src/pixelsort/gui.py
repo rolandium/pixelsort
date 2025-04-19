@@ -35,10 +35,10 @@ class GUI:
         dpg.create_context()
 
         # Initialize registries where the images will be stored
-        dpg.add_texture_registry(label="BaseImgRegistry", show=False)
-        dpg.add_texture_registry(label="MaskImgRegistry", show=False)
-        dpg.add_texture_registry(label="VFRegistry", show=False)
-        dpg.add_texture_registry(label="OutputImgRegistry", show=False, tag="OutputImgRegistry")
+        dpg.add_texture_registry(label="BaseImgRegistry", show=False, tag="registry_BaseImg")
+        dpg.add_texture_registry(label="MaskImgRegistry", show=False, tag="registry_MaskImg")
+        dpg.add_texture_registry(label="VFRegistry", show=False, tag="registry_VF")
+        dpg.add_texture_registry(label="OutputImgRegistry", show=False, tag="registry_OutputImg")
         
         # Unique file dialogs for each purpose 
         with dpg.file_dialog(label="Select a file to open:",
@@ -72,13 +72,13 @@ class GUI:
                                   pos=[10,30]):
                 with dpg.tab_bar(label = "navigate"):
                     with dpg.tab(label = "Base Image"):
-                        dpg.add_child_window(label = "originalImage", width=835, height=660, horizontal_scrollbar=True)
+                        dpg.add_child_window(label = "originalImage", width=835, height=660, horizontal_scrollbar=True, tag="panel_BaseImg")
                     with dpg.tab(label = "Mask"):
-                        dpg.add_child_window(label = "maskImage", width=835, height=660, horizontal_scrollbar=True)
+                        dpg.add_child_window(label = "maskImage", width=835, height=660, horizontal_scrollbar=True, tag="panel_MaskImg")
                     with dpg.tab(label = "Vector Field"):
-                        dpg.add_child_window(label = "vectorField", width=835, height=660, horizontal_scrollbar=True, tag="vectorField")
+                        dpg.add_child_window(label = "vectorField", width=835, height=660, horizontal_scrollbar=True, tag="panel_VectorField")
                     with dpg.tab(label = "Output Image"):
-                        dpg.add_child_window(label = "outputImage", width=835, height=660, horizontal_scrollbar=True, tag="outputImage")
+                        dpg.add_child_window(label = "outputImage", width=835, height=660, horizontal_scrollbar=True, tag="panel_OutputImg")
 
             # Operations window
             with dpg.child_window(label="Operations", width=400, height=700, pos=[870,30]):
@@ -338,10 +338,10 @@ class GUI:
 
     # Shows all the texture registries
     def showTexRegistries(sender):
-        dpg.show_item(22)
-        dpg.show_item(23)
-        dpg.show_item(24)
-        dpg.show_item(25)
+        dpg.show_item("registry_BaseImg")
+        dpg.show_item("registry_MaskImg")
+        dpg.show_item("registry_VF")
+        dpg.show_item("registry_OutputImg")
 
     # Sets the max frames
     def setMaxFrames(self, sender, app_data):

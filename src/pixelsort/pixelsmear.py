@@ -3,6 +3,7 @@ from math import sin, exp
 from PIL import Image
 from PIL import ImageOps
 from pixelsort.vectorfield import VectorField
+import os
 
 class PixelSmear:
     #initialize threshold (70, 100) and num_step = 10
@@ -108,7 +109,8 @@ class PixelSmear:
                     self.positions[0, y, x] = [y, x]
 
         for t in range(1, self.num_steps):
-            print(f"warping: t={t + 1}/{self.num_steps}", end='\r', flush=True)
+            self.progress += (1/self.num_steps) * 0.33
+            print(f"progress: {self.progress}", end='\r', flush=True)
             dx = float(self.dx_func(t))
             dy = float(self.dy_func(t))
             for y in range(self.height):
@@ -226,6 +228,8 @@ class PixelSmear:
             frame_rgba = rgba_clip.astype(np.uint8)
             comp = Image.alpha_composite(self.image.convert("RGBA"), Image.fromarray(frame_rgba, 'RGBA'))
             self.frames.append(comp)
+            if(not os.path.isdir("src/pixelsort/results/")):
+                os.mkdir("src/pixelsort/results/")
             comp.save(self.out_path.replace('.png', f'_frame_{t:02d}.png'))
 
         self.smear_stack = np.stack(smear_frames)
@@ -239,7 +243,9 @@ class PixelSmear:
         mask = Image.open(self.mask_path)
         mask = np.array(mask)
         self.warp_positions(mask)
+        self.progress = 0.33
         self.smear_colors()
+        self.progress = 0.66
         self.render()
         self.progress = 1.0
 

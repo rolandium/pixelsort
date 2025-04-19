@@ -1,6 +1,7 @@
 import dearpygui.dearpygui as dpg
 import numpy as np
 from PIL import Image
+import os
 from pixelsort.masking import Mask
 from pixelsort.vectorfield import VectorField
 from pixelsort.vectorfieldgallery import VectorFieldGallery
@@ -26,16 +27,16 @@ def showImage(imagePath, self):
     width, height, _, data = dpg.load_image(imagePath)
 
     # On each "Open", reset all the texture libraries and the "Base Image" window
-    dpg.delete_item(22, children_only=True)
-    dpg.delete_item(44, children_only=True)
-    #dpg.delete_item(46, children_only=True)
-    #dpg.delete_item(48, children_only=True)
-    #dpg.delete_item(50, children_only=True)
+    dpg.delete_item("registry_BaseImg", children_only=True)
+    dpg.delete_item("panel_BaseImg", children_only=True)
+    #dpg.delete_item("panel_MaskImg", children_only=True)
+    #dpg.delete_item("panel_VectorField", children_only=True)
+    #dpg.delete_item("panel_OutputImg", children_only=True)
 
-    dpg.add_dynamic_texture(width=width, height=height, default_value=data, tag="baseImg", parent=22) 
+    dpg.add_dynamic_texture(width=width, height=height, default_value=data, tag="baseImg", parent="registry_BaseImg") 
 
     # print("trying to add to registry")
-    dpg.add_image("baseImg", parent=44, pos=[10,10])
+    dpg.add_image("baseImg", parent="panel_BaseImg", pos=[10,10])
 
 # Depending on the type of save, do the following
 def saveImage(self, folderPath, typeSave):
@@ -106,16 +107,18 @@ def makeMask(self, sender):
     newMask = mask.getMask(typeMask, gauss_strength)
 
     # Save the image internally and update the Mask Window
+    if(not os.path.isdir('src/pixelsort/mask/')):
+        os.mkdir('src/pixelsort/mask/')
     maskPath = 'src/pixelsort/mask/mask.png'
     newMask.save(maskPath)
     maskWidth, maskHeight, _, maskData = dpg.load_image(maskPath)
     
-    dpg.delete_item(23, children_only=True)
-    dpg.delete_item(46, children_only=True)
+    dpg.delete_item("registry_MaskImg", children_only=True)
+    dpg.delete_item("panel_MaskImg", children_only=True)
 
-    dpg.add_dynamic_texture(width=maskWidth, height=maskHeight, default_value=maskData, tag="maskImg", parent=23)
+    dpg.add_dynamic_texture(width=maskWidth, height=maskHeight, default_value=maskData, tag="maskImg", parent="registry_MaskImg")
 
-    dpg.add_image("maskImg", parent=46, pos=[10,10])
+    dpg.add_image("maskImg", parent="panel_MaskImg", pos=[10,10])
     
     im.close()
     return maskPath
@@ -133,11 +136,11 @@ def showVF(self,sender):
     
     vfWidth, vfHeight, _, vfData = dpg.load_image(vfImgPath)
 
-    dpg.delete_item(24, children_only=True)
-    dpg.delete_item(48, children_only=True)
+    dpg.delete_item("registry_VF", children_only=True)
+    dpg.delete_item("panel_VectorField", children_only=True)
 
-    dpg.add_dynamic_texture(width=vfWidth, height=vfHeight, default_value=vfData, tag="vfImg", parent=24)
-    dpg.add_image("vfImg", parent=48, pos=[10,10])
+    dpg.add_dynamic_texture(width=vfWidth, height=vfHeight, default_value=vfData, tag="vfImg", parent="registry_VF")
+    dpg.add_image("vfImg", parent="panel_VectorField", pos=[10,10])
 
 def doSmear(self, sender):
 
@@ -179,7 +182,7 @@ def doSmear(self, sender):
         selectedVF = "chaotic_spiral"
     
     selectedVF = selectedVF.lower()
-    vfGal = VectorFieldGallery("src/pixelsort/vector fields")
+    vfGal = VectorFieldGallery("src/pixelsort/vector_fields")
     vecField = VectorField(0,0)
 
     # If doVF is true, load the Vector Field into the Vector Field Window
@@ -191,21 +194,21 @@ def doSmear(self, sender):
         
         vfWidth, vfHeight, _, vfData = dpg.load_image(vfImgPath)
 
-        dpg.delete_item(24, children_only=True)
-        dpg.delete_item(48, children_only=True)
+        dpg.delete_item("registry_VF", children_only=True)
+        dpg.delete_item("panel_VectorField", children_only=True)
 
-        dpg.add_dynamic_texture(width=vfWidth, height=vfHeight, default_value=vfData, tag="vfImg", parent=24)
-        dpg.add_image("vfImg", parent=48, pos=[10,10])
+        dpg.add_dynamic_texture(width=vfWidth, height=vfHeight, default_value=vfData, tag="vfImg", parent="registry_VF")
+        dpg.add_image("vfImg", parent="panel_VectorField", pos=[10,10])
 
     # Initialize variables for PixelSmear
     imgPath = self._currentFile
-    outPath = 'src/pixelsort/result/out.png'
+    outPath = 'src/pixelsort/results/out.png'
     maskPath = self._maskPath
     t = self._maxFrames
     smeared = PixelSmear(imgPath, outPath, maskPath, num_steps=int(t+1), dx_expr = strX, dy_expr = strY, doVF = activateVF, vf = vecField)
 
-    dpg.delete_item(50, children_only=True)
-    dpg.delete_item("OutputImgRegistry", children_only=True)
+    dpg.delete_item("panel_OutputImg", children_only=True)
+    dpg.delete_item("registry_OutputImg", children_only=True)
 
     smeared.run()
     dpg.set_value("smearProgress", smeared.progress)
@@ -220,16 +223,16 @@ def doSmear(self, sender):
         texture_data = np.true_divide(smeared_data, 255.0)
         imgHeight, imgWidth = smeared.height, smeared.width
         dpg.add_raw_texture(width=imgWidth, height=imgHeight, default_value=texture_data, tag="frame"+frameNum, 
-                            parent="OutputImgRegistry",format=dpg.mvFormat_Float_rgba)
+                            parent="registry_OutputImg",format=dpg.mvFormat_Float_rgba)
     
-    dpg.add_image("frame"+frameNum, parent=50, pos=[10,10])
+    dpg.add_image("frame"+frameNum, parent="panel_OutputImg", pos=[10,10])
     print("Finished")
     return smeared.frame_stack
 
 # Select a frame from Frame Selector
 def selectFrame(sender, app_data):
-    dpg.delete_item(50, children_only=True)
+    dpg.delete_item("panel_OutputImg", children_only=True)
     frameNum = str(app_data-1)
-    dpg.add_image("frame"+frameNum, parent=50, pos=[10,10])
+    dpg.add_image("frame"+frameNum, parent="panel_OutputImg", pos=[10,10])
 
 
