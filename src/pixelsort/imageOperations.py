@@ -39,7 +39,8 @@ def showImage(imagePath, self):
     w, h, x, y = get_scaling("panel_BaseImg",(width,height))
     print(f"showImage | w={w} h={h} x={x} y={y}")
 
-    dpg.add_image("baseImg", width=w, height=h, parent="panel_BaseImg", pos=[x,y])
+    dpg.add_image("baseImg", width=w, height=h, parent="panel_BaseImg", pos=[x,y], tag="image_Base")
+    self._loadedImages.setdefault("panel_BaseImg", {})["image_Base"] = (width,height)
 
 # Depending on the type of save, do the following
 def saveImage(self, folderPath, typeSave):
@@ -123,8 +124,8 @@ def makeMask(self, sender):
 
     w, h, x, y = get_scaling("panel_MaskImg",(maskWidth,maskHeight))
 
-    dpg.add_image("maskImg", width=w, height=h, parent="panel_MaskImg", pos=[x,y])
-    
+    dpg.add_image("maskImg", width=w, height=h, parent="panel_MaskImg", pos=[x,y], tag="image_Mask")
+    self._loadedImages.setdefault("panel_MaskImg", {})["image_Mask"] = (maskWidth,maskHeight)
     im.close()
     return maskPath
     
@@ -149,7 +150,7 @@ def get_scaling(panel_tag,img_dimensions):
 
     return scaled_width, scaled_height, position[0], position[1]
 
-def showVF(self,sender):
+def showVF(sender, app_data, gui):
     vfGal = VectorFieldGallery("src/pixelsort/vector_fields")
     vfHeader = dpg.get_item_children("VectorField")
     selectedVF = dpg.get_value(vfHeader[1][1])
@@ -169,7 +170,8 @@ def showVF(self,sender):
     
     w, h, x, y = get_scaling("panel_VectorField",(vfWidth,vfHeight))
 
-    dpg.add_image("vfImg", width=w , height=h, parent="panel_VectorField", pos=[x,y])
+    dpg.add_image("vfImg", width=w , height=h, parent="panel_VectorField", pos=[x,y], tag="image_VF")
+    gui._loadedImages.setdefault("panel_VectorField", {})["image_VF"] = (vfWidth, vfHeight)
 
 def doSmear(self, sender):
 
@@ -274,7 +276,8 @@ def selectFrame(sender, app_data, gui):
 
     w, h, x, y = get_scaling("panel_OutputImg",(width,height))
 
-    dpg.add_image("frame"+frameNum, width=w, height=h, parent="panel_OutputImg", pos=[x,y])
+    dpg.add_image("frame"+frameNum, width=w, height=h, parent="panel_OutputImg", pos=[x,y], tag="image_Output")
+    gui._loadedImages.setdefault("panel_OutputImg", {})["image_Output"] = (width,height)
 
 class SmearRunner:
     """

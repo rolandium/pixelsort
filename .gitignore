@@ -2,3 +2,4 @@ src/pixelsort/vector_fields
 src/pixelsort/mask
 src/pixelsort/results
 src/pixelsort/__pycache__
+.vscode

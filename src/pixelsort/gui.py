@@ -33,6 +33,10 @@ class GUI:
         self._frameHeight = 1
         self._frameWidth = 1
 
+        self._loadedImages = {
+            # panel tag : {image tag : (original width, original height)}
+        }
+
         # hold the SmearRunner for later polling, give it garbage values to avoid crashes
         self.smear_runner = None
 
@@ -75,8 +79,8 @@ class GUI:
             
             # Where the images are painted
             with dpg.child_window(label="image tabs", width=850, height=700,
-                                  resizable_x=True, resizable_y=True,
-                                  pos=[10,30]):
+                                  #resizable_x=True, resizable_y=True,
+                                  pos=[10,30], tag="window_ImageTabs"):
                 with dpg.tab_bar(label = "navigate"):
                     with dpg.tab(label = "Base Image"):
                         dpg.add_child_window(label = "originalImage", width=835, height=660, horizontal_scrollbar=True, tag="panel_BaseImg")
@@ -189,7 +193,7 @@ class GUI:
                             dpg.add_text("Select a preset vector field: ", pos=[10,10])
                             presetField = ["Border", "Chaotic Spiral", "Collapse", "Cross", "Explosion",
                                             "Orbit", "Plus", "Spiral","Star", "Wave"]
-                            dpg.add_combo(presetField, width=200, default_value="Border", callback=imageOperations.showVF,
+                            dpg.add_combo(presetField, width=200, default_value="Border", callback=imageOperations.showVF, user_data=self,
                                             pos=[10, 30], tag="presetField")
                             dpg.add_text("Apply vector field?", pos=[10, 60])
                             dpg.add_checkbox(tag="doVectorField",pos =[200, 60])
@@ -224,9 +228,15 @@ class GUI:
 
                 dpg.add_progress_bar(default_value=0, width=-1, overlay="0%", tag="smearProgress", pos=[7, dpg.get_item_height("window_Operations")-30])
 
+        # change child window height, width, position, on window size change
+        dpg.set_viewport_resize_callback(callback=self.on_viewport_resize)
 
-        dpg.create_viewport(title='Pixelsmearing', width=1300, height=800)
+        dpg.create_viewport(title='Pixelsmearing', width=1300, height=800, min_height=780, min_width=500)
         dpg.setup_dearpygui()
+
+        # fire component size scaling once
+        self.on_viewport_resize(None, None)
+
         dpg.show_viewport()
         dpg.set_primary_window("Primary Window", True)
         #dpg.start_dearpygui()
@@ -254,7 +264,8 @@ class GUI:
                                             parent="registry_OutputImg",format=dpg.mvFormat_Float_rgba)
                     
                     w, h, x , y = get_scaling("panel_OutputImg",(imgWidth,imgHeight))
-                    dpg.add_image("frame"+frameNum, parent="panel_OutputImg", width=w, height=h, pos=[x,y])
+                    dpg.add_image("frame"+frameNum, width=w, height=h, parent="panel_OutputImg", pos=[x,y], tag="image_Output")
+                    self._loadedImages.setdefault("panel_OutputImg", {})["image_Output"] = (imgWidth,imgHeight)
                     self._currentFrames = frame_stack
                     self._currentResult = self._currentFrames[(self._maxFrames)-1]
                     stack_isSet = True
@@ -263,6 +274,35 @@ class GUI:
             dpg.render_dearpygui_frame()
             pass
         dpg.destroy_context()
+
+    def on_viewport_resize(self, sender, app_data):
+        """
+        Callback function to change component scaling and position on window resize
+        """
+        t_w = dpg.get_viewport_client_width()
+        t_h = dpg.get_viewport_client_height()
+
+        sidebar_w = 400
+        margin = 10
+        top_bar = 30
+
+        i_w = t_w - sidebar_w - margin*2
+        i_h = t_h - top_bar - margin
+
+        # image tabs
+        dpg.configure_item("window_ImageTabs", width = i_w, height = i_h)
+        for panel_tag in ("panel_BaseImg", "panel_MaskImg", "panel_VectorField", "panel_OutputImg"):
+            dpg.configure_item(panel_tag, width = i_w - 15, height= i_h - 35)
+        
+        # operation sidebar
+        dpg.configure_item("window_Operations", pos = [i_w + margin, top_bar], width = sidebar_w, height = i_h)
+        dpg.configure_item("smearProgress", pos=[7, dpg.get_item_height("window_Operations")-30])
+
+        # rescale preview images
+        for panel_tag, images in self._loadedImages.items():
+            for img_tag, (origin_w, origin_h) in images.items():
+                w, h, x, y = get_scaling(panel_tag, (origin_w,origin_h))
+                dpg.configure_item(img_tag, width=w, height=h, pos=[x,y])
 
     def setProgressBar(self,progress):
         perc = f"{progress * 100:.2f}"
