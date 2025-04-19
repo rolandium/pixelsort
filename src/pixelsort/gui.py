@@ -85,7 +85,7 @@ class GUI:
                         dpg.add_child_window(label = "outputImage", width=835, height=660, horizontal_scrollbar=True, tag="panel_OutputImg")
 
             # Operations window
-            with dpg.child_window(label="Operations", width=400, height=700, pos=[870,30]):
+            with dpg.child_window(label="Operations", width=400, height=700, pos=[870,30], tag="window_Operations"):
                 funcs = ["---", "Masking", "Transformations", "Frame Selector"]
                 dpg.add_text("Select an operation:", pos=[10, 5])
                 dpg.add_combo(funcs, callback=self.getFunctionHeader, width=380, pos=[10, 30], default_value="---")
@@ -148,7 +148,7 @@ class GUI:
                     dpg.add_button(label="Save Mask", pos=[0.78*dpg.get_item_width("Masking"), 0.94*dpg.get_item_height("Masking")], 
                                callback=lambda: dpg.show_item(88) if self._maskPath == None else dpg.show_item("getMaskFolder"),
                                  tag="saveMask")
-                    dpg.add_text("No mask exists.", pos=[0.68*dpg.get_item_width("Masking"), 0.90*dpg.get_item_height("Masking")], show=False)
+                    dpg.add_text("No mask exists.", pos=[0.68*dpg.get_item_width("Masking"), 0.90*dpg.get_item_height("Masking")], show=False, tag="text_NoMaskError")
 
                 # Transformation Window
                 with dpg.child_window(label="Transformations", width=380, height=590, pos=[10, 55], show=False, tag="Transformations"):
@@ -192,18 +192,19 @@ class GUI:
                             dpg.add_checkbox(tag="doVectorField",pos =[200, 60])
                             dpg.add_text("Note: this will override 'Direction' inputs", pos=[10, 80])
 
-                    dpg.add_progress_bar(default_value=0, width=-1, overlay="0%", tag="smearProgress", pos=[7, 0.85*dpg.get_item_height("Transformations")])
+                    # for some unholy reason, removing this causes the contents of frame selection to disappear
+                    dpg.add_spacer(width=0, height=0) 
 
                     # Sends the call to smear the image given all the above information
                     # Shows a message if no image has been loaded or if no smear exists    
                     dpg.add_button(label="Smear", pos=[10, 0.94*dpg.get_item_height("Transformations")], 
                                callback=self.smear, tag="smear")
-                    dpg.add_text("No image selected.", pos=[10, 0.90*dpg.get_item_height("Transformations")], show=False)
+                    dpg.add_text("No image selected.", pos=[10, 0.90*dpg.get_item_height("Transformations")], show=False, tag="text_SmearNoImageError")
                     dpg.add_button(label="Save Smear", pos=[0.76*dpg.get_item_width("Transformations"), 0.94*dpg.get_item_height("Transformations")], 
-                               callback=lambda: dpg.show_item(118) if self._currentResult.any() == None
+                               callback=lambda: dpg.show_item("text_SmearNoSmearError") if self._currentResult is None
                                  else dpg.show_item("getResultFolder"), tag="saveSmear")
                     dpg.add_text("No smear exists.",
-                                pos=[0.68*dpg.get_item_width("Transformations"), 0.90*dpg.get_item_height("Transformations")], show=False)
+                                pos=[0.68*dpg.get_item_width("Transformations"), 0.90*dpg.get_item_height("Transformations")], show=False, tag="text_SmearNoSmearError")
 
                 # Frame Selector Window
                 with dpg.child_window(label="Frame Selector", width=380, height=490, pos=[10, 55], show=False, tag="FrameSelector"):
@@ -213,10 +214,13 @@ class GUI:
                     dpg.add_slider_int(tag="selectedFrame", no_input=False, pos=[10, 30],
                                         min_value=1, max_value=1, callback=imageOperations.selectFrame, default_value=self._maxFrames)
                     dpg.add_button(label="Save Frames", pos=[0.75*dpg.get_item_width("FrameSelector"), 0.94*dpg.get_item_height("FrameSelector")], 
-                               callback=lambda: dpg.show_item(123) if self._currentResult.any() == None else dpg.show_item("getFrameFolder"),
+                               callback=lambda: dpg.show_item("text_FrameNoSmearError") if self._currentResult is None else dpg.show_item("getFrameFolder"),
                                  tag="saveFrames")
                     dpg.add_text("No smear exists.",
-                                pos=[0.68*dpg.get_item_width("FrameSelector"), 0.90*dpg.get_item_height("FrameSelector")], show=False)
+                                pos=[0.68*dpg.get_item_width("FrameSelector"), 0.90*dpg.get_item_height("FrameSelector")], show=False, tag="text_FrameNoSmearError")
+
+                # PROGRESS BAR WOULD GO HERE?  
+                dpg.add_progress_bar(default_value=0, width=-1, overlay="0%", tag="smearProgress", pos=[7, dpg.get_item_height("window_Operations")-30])
 
 
         dpg.create_viewport(title='Pixelsmearing', width=1300, height=800)
@@ -309,9 +313,9 @@ class GUI:
     # Enables the interaction of the Gaussian input and Box inputs
     def enableGaussian(object, sender, app_data):
         if app_data == True:
-            dpg.configure_item(65, enabled=True)
+            dpg.configure_item(64, enabled=True)
         else:
-            dpg.configure_item(65, enabled=False)
+            dpg.configure_item(64, enabled=False)
 
     # If the user wishes to have bounding boxes, enable the text fields
     def enableBoxes(self, sender, app_data):
@@ -348,10 +352,10 @@ class GUI:
     # Make the mask and saves it to the constructor
     def makeMask(self, sender):
         if (self._currentFile == "Empty"):
-            dpg.show_item(86)
+            dpg.show_item("text_NoMaskError")
             print("NO FILE!!")
         else:
-            dpg.hide_item(86)
+            dpg.hide_item("text_NoMaskError")
             print("Masking: ", self._currentFile)
             self._maskPath = imageOperations.makeMask(self, sender)
 
@@ -373,10 +377,10 @@ class GUI:
     # Smears the image
     def smear(self, sender):
         if (self._maskPath == None):
-            dpg.show_item(116)
+            dpg.show_item("text_SmearNoImageError")
             print("NO FILE!!")
         else:
-            dpg.hide_item(116)
+            dpg.hide_item("text_SmearNoImageError")
             print("Smearing: ", self._currentFile)
             imageOperations.doSmear(self, sender)
             # todo: refactor this
@@ -393,6 +397,4 @@ class GUI:
     # Sets the max frames
     def setMaxFrames(self, sender, app_data):
         self._maxFrames = app_data
-        dpg.configure_item(121, max_value = self._maxFrames)
-
-    
+        dpg.configure_item("selectedFrame", max_value = self._maxFrames)
