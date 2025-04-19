@@ -3,7 +3,6 @@ import pixelsmear as pixelsmear
 import imageOperations as imageOperations 
 import dearpygui.dearpygui as dpg
 import numpy as np
-import dearpygui.demo as demo
 
 class GUI:
 
@@ -14,7 +13,7 @@ class GUI:
 
         # Holds the item number of the Operation
         self._paramLabel = {
-                    "---": 0, "Masking": 54, "Transformations": 89, "Frame Selector": 118
+                    "---": 0, "Masking": 54, "Transformations": 89, "Frame Selector": 119
                     }
         
         # Parameters for Masking
@@ -148,7 +147,7 @@ class GUI:
                     dpg.add_text("No mask exists.", pos=[0.68*dpg.get_item_width("Masking"), 0.90*dpg.get_item_height("Masking")], show=False)
 
                 # Transformation Window
-                with dpg.child_window(label="Transformations", width=380, height=550, pos=[10, 55], show=False, tag="Transformations"):
+                with dpg.child_window(label="Transformations", width=380, height=590, pos=[10, 55], show=False, tag="Transformations"):
                     
                     # Controls directions and allows user input for basic equations
                     with dpg.collapsing_header(label="Directions"):
@@ -189,7 +188,7 @@ class GUI:
                             dpg.add_checkbox(tag="doVectorField",pos =[200, 60])
                             dpg.add_text("Note: this will override 'Direction' inputs", pos=[10, 80])
 
-                    dpg.add_progress_bar(default_value=0, width=-1, overlay="0%", tag="smearProgress")
+                    dpg.add_progress_bar(default_value=0, width=-1, overlay="0%", tag="smearProgress", pos=[7, 0.85*dpg.get_item_height("Transformations")])
 
                     # Sends the call to smear the image given all the above information
                     # Shows a message if no image has been loaded or if no smear exists    
@@ -347,6 +346,6 @@ class GUI:
     # Sets the max frames
     def setMaxFrames(self, sender, app_data):
         self._maxFrames = app_data
-        dpg.configure_item(120, max_value = self._maxFrames)
+        dpg.configure_item(121, max_value = self._maxFrames)
 
     
