@@ -1,4 +1,4 @@
-import os
+import os, threading
 import numpy as np
 from PIL import Image
 from pixelsort.vectorfield import Vector, VectorField
@@ -6,10 +6,19 @@ from pixelsort.vectorfield import Vector, VectorField
 DIRECTORY = "src/pixelsort/vector_fields"
 
 class VectorFieldGallery:
+    """
+    Class that includes functions for loading pre rendered vector fields from disk
+    Also provides a function to generate the vector fields in a background thread
+    """
     def __init__(self, directory=DIRECTORY):
         self.directory = directory
         self.index = {}
         self._scan_directory()
+
+        self._gen_progress = 0.0
+        self._gen_runner = None
+        self._gen_lock = threading.Lock()
+        self._gen_finished = False
 
     def _scan_directory(self):
         for filename in os.listdir(self.directory):
@@ -34,6 +43,53 @@ class VectorFieldGallery:
     
     def list_fields(self):
         return sorted(self.index.keys())
+    
+    # -- generation thread --
+
+    def generate_all_fields(self):
+        with self._gen_lock:
+            self._gen_runner = threading.Thread(target=self._gen_runnerFn)
+            self._gen_runner.start()
+
+    def get_generation_progress(self):
+        with self._gen_lock:
+            return self._gen_progress
+
+    def generation_is_finished(self):
+        with self._gen_lock:
+            return self._gen_finished
+
+    def generation_is_running(self):
+        with self._gen_lock:
+            return not self._gen_finished
+
+    def _gen_runnerFn(self):
+        self._gen_fields()
+        # blocking until finished
+        self._gen_finished = True
+
+    def _gen_fields(self):
+        self._gen_progress = 0.0
+        vfg_make_and_save(vfg_gen_collapse,"collapse")
+        self._gen_progress = 0.1
+        vfg_make_and_save(vfg_gen_explosion,"explosion")
+        self._gen_progress = 0.2
+        vfg_make_and_save(vfg_gen_borderrun,"border")
+        self._gen_progress = 0.3
+        vfg_make_and_save(vfg_gen_plus,"plus")
+        self._gen_progress = 0.4
+        vfg_make_and_save(vfg_gen_cross,"cross")
+        self._gen_progress = 0.5
+        vfg_make_and_save(vfg_gen_eightstar,"star")
+        self._gen_progress = 0.6
+        vfg_make_and_save(vfg_gen_spiral,"spiral")
+        self._gen_progress = 0.7
+        vfg_make_and_save(vfg_gen_chaotic_spiral,"chaotic_spiral")
+        self._gen_progress = 0.8
+        vfg_make_and_save(vfg_gen_orbit,"orbit")
+        self._gen_progress = 0.9
+        vfg_make_and_save(vfg_gen_wave,"wave")
+        self._gen_progress = 1.0
     
 # ------------- begin vector field generation code ----------------- #
 

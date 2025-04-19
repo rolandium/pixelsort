@@ -360,7 +360,8 @@ class VectorField:
                 else:
                     color = 'white'
                 draw.polygon(poly,fill=color)
-        img.show()
+        if(show_image):
+            img.show()
         return img
 
     def __repr__(self):

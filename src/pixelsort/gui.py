@@ -3,17 +3,18 @@ import pixelsort.pixelsmear as pixelsmear
 import pixelsort.imageOperations as imageOperations 
 from pixelsort.imageOperations import SmearRunner
 from pixelsort.imageOperations import get_scaling
+from pixelsort.vectorfieldgallery import VectorFieldGallery
 import dearpygui.dearpygui as dpg
 import numpy as np
 
-import platform
+import platform, os
 if platform.system() == "Windows":
-    print("OS = WINDOWS")
+    # print("OS = WINDOWS")
     from ctypes import windll
     import pywinstyles
     OS_WIN = True
 else:
-    print("OS != WINDOWS")
+    # print("OS != WINDOWS")
     OS_WIN = False
 
 class GUI:
@@ -25,7 +26,7 @@ class GUI:
 
         # Holds the item number of the Operation
         self._paramLabel = {
-                    "---": 0, "Masking": 54, "Transformations": 89, "Frame Selector": 119
+                    "---": "Intro", "Masking": "Masking", "Transformations": "Transformations", "Frame Selector": "FrameSelector"
                     }
         
         # Parameters for Masking
@@ -33,7 +34,9 @@ class GUI:
         self._numBox = 1
         self._boxHolders = {
             # [0], [1] hold the inputs; [2], [3] hold the texts
-            "1": (72, 74, 71, 73), "2": (76, 78, 75, 77), "3": (80, 82, 79, 81)
+            "1": ("box1_tl_in", "box1_br_in", "box1_tl_text", "box1_br_text"), 
+            "2": ("box2_tl_in", "box2_br_in", "box2_tl_text", "box2_br_text"), 
+            "3": ("box3_tl_in", "box3_br_in", "box3_tl_text", "box3_br_text")
         }
 
         # Parameters for Transformations and Frame Selector
@@ -49,6 +52,9 @@ class GUI:
 
         # hold the SmearRunner for later polling, give it garbage values to avoid crashes
         self.smear_runner = None
+
+        # also hold a vfg for rendering vector fields
+        self.vfgallery = None
 
         self._initDPG()
 
@@ -108,8 +114,16 @@ class GUI:
                 dpg.add_combo(funcs, callback=self.getFunctionHeader, width=380, pos=[10, 30], default_value="---")
 
                 # intro window (---)
-                with dpg.child_window(label="---", width=380, height=490, pos=[10,55], show=False, tag="Intro"):
-                    pass
+                with dpg.child_window(label="---", width=380, height=490, pos=[10,55], show=True, tag="Intro"):
+                    dpg.add_text("Welcome.\n\nIf this is your first time, generate the pre-made \nVector Fields using the button below.", pos=[10,10])
+                    dpg.add_text("note: directory already exists.",pos=[10,70], show=os.path.isdir("src/pixelsort/vector_fields"))
+                    dpg.add_button(label="Generate Vector Fields", pos=[10, 90], 
+                               callback=self.genVectorFields, tag="button_GenerateVectorFields")
+                    dpg.add_text("Quick Start:" \
+                    "\nLoad an image using the file button in the top left." \
+                    "\nAdjust masking parameters on masking page. (above)." \
+                    "\nSort the image on the transfomations page." \
+                    "\nDisplay rendered frames via frame selection.", pos=[10,120])
 
                 # Masking Window
                 with dpg.child_window(label="Masking", width=380, height=490, pos=[10, 55], show=False, tag="Masking"):
@@ -141,20 +155,20 @@ class GUI:
                     dpg.add_text("Please input in form: x, y", pos=[10, 220])
 
                     # Up to 3 boxes can be made
-                    dpg.add_text("Top Left of Box 1:", pos=[10, 240])
-                    dpg.add_input_text(tag="topLeft1", width=75, pos=[180, 240], enabled=False, default_value="30, 40")
-                    dpg.add_text("Bottom Right of Box 1:", pos=[10, 265])
-                    dpg.add_input_text(tag="botRight1", width=75, pos=[180, 265], enabled=False, default_value="50, 80")
+                    dpg.add_text("Top Left of Box 1:", pos=[10, 240], tag="box1_tl_text")
+                    dpg.add_input_text(width=75, pos=[180, 240], enabled=False, default_value="30, 40",tag="box1_tl_in")
+                    dpg.add_text("Bottom Right of Box 1:", pos=[10, 265], tag="box1_br_text")
+                    dpg.add_input_text(width=75, pos=[180, 265], enabled=False, default_value="50, 80", tag="box1_br_in")
                     
-                    dpg.add_text("Top Left of Box 2:", pos=[10, 290], show=False)
-                    dpg.add_input_text(tag="topLeft2", width=75, pos=[180, 290], enabled=False, default_value="30, 40", show=False)
-                    dpg.add_text("Bottom Right of Box 2:", pos=[10, 315], show=False)
-                    dpg.add_input_text(tag="botRight2", width=75, pos=[180, 315], enabled=False, default_value="50, 80", show=False)
+                    dpg.add_text("Top Left of Box 2:", pos=[10, 290], show=False, tag="box2_tl_text")
+                    dpg.add_input_text(width=75, pos=[180, 290], enabled=False, default_value="30, 40", show=False,tag="box2_tl_in")
+                    dpg.add_text("Bottom Right of Box 2:", pos=[10, 315], show=False, tag="box2_br_text")
+                    dpg.add_input_text(width=75, pos=[180, 315], enabled=False, default_value="50, 80", show=False, tag="box2_br_in")
                     
-                    dpg.add_text("Top Left of Box 3:", pos=[10, 340], show=False)
-                    dpg.add_input_text(tag="topLeft3", width=75, pos=[180, 340], enabled=False, default_value="30, 40", show=False)
-                    dpg.add_text("Bottom Right of Box 3:", pos=[10, 365], show=False)
-                    dpg.add_input_text(tag="botRight3", width=75, pos=[180, 365], enabled=False, default_value="50, 80", show=False)
+                    dpg.add_text("Top Left of Box 3:", pos=[10, 340], show=False, tag="box3_tl_text")
+                    dpg.add_input_text(width=75, pos=[180, 340], enabled=False, default_value="30, 40", show=False,tag="box3_tl_in")
+                    dpg.add_text("Bottom Right of Box 3:", pos=[10, 365], show=False, tag="box3_br_text")
+                    dpg.add_input_text(width=75, pos=[180, 365], enabled=False, default_value="50, 80", show=False, tag="box3_br_in")
 
                     # Invert boxes
                     dpg.add_text("Invert Box(es)?", pos=[10, 390])
@@ -175,7 +189,7 @@ class GUI:
                 with dpg.child_window(label="Transformations", width=380, height=590, pos=[10, 55], show=False, tag="Transformations"):
                     
                     # Controls directions and allows user input for basic equations
-                    with dpg.collapsing_header(label="Directions"):
+                    with dpg.collapsing_header(label="Directions",default_open=True):
                         with dpg.child_window(label="DirectionWindow", width=360, height=220, tag="Direction"):
                             dpg.add_text("Select a direction: ", pos=[10,10])
                             directions = ["Left", "Right", "Up", "Down", "Custom", "None"]
@@ -192,17 +206,10 @@ class GUI:
                             dpg.add_input_text(tag="stringX", pos=[100,140], width=200, enabled=False, default_value="5*t")
                             dpg.add_text("Y equation:", pos=[10,165])
                             dpg.add_input_text(tag="stringY", pos=[100,165], width=200, enabled=False, default_value="5*t")
-
-                    # Takes in a number to be the max number of frames generated
-                    with dpg.collapsing_header(label="Max Frames", tag="selectFrames"):
-                        with dpg.child_window(label="MaxFramesWindow", width=360, height=75):
-                            dpg.add_text("Set the value of max frames: ", pos=[10,10])
-                            dpg.add_input_int(tag="max_frames", pos=[10,30], width=75, callback = self.setMaxFrames, default_value=10,
-                                        min_value=1, min_clamped=True)
                     
                     # Selects a preset vector field and applies if it the user likes
                     # Overrides the "Directions" input
-                    with dpg.collapsing_header(label="Vector Field"):
+                    with dpg.collapsing_header(label="Vector Field",default_open=True):
                         with dpg.child_window(label="VFWindow", width=360, height=110, tag="VectorField"):
                             dpg.add_text("Select a preset vector field: ", pos=[10,10])
                             presetField = ["Border", "Chaotic Spiral", "Collapse", "Cross", "Explosion",
@@ -213,18 +220,25 @@ class GUI:
                             dpg.add_checkbox(tag="doVectorField",pos =[200, 60])
                             dpg.add_text("Note: this will override 'Direction' inputs", pos=[10, 80])
 
+                    # Takes in a number to be the max number of frames generated
+                    with dpg.collapsing_header(label="Max Frames", tag="selectFrames",default_open=True):
+                        with dpg.child_window(label="MaxFramesWindow", width=360, height=75):
+                            dpg.add_text("Set the number of frames to render\n(this also determines line length)", pos=[10,10])
+                            dpg.add_input_int(tag="max_frames", pos=[10,45], width=75, callback = self.setMaxFrames, default_value=10,
+                                        min_value=1, min_clamped=True)
+
                     # for some unholy reason, removing this causes the contents of frame selection to disappear
                     dpg.add_spacer(width=0, height=0) 
 
                     # Sends the call to smear the image given all the above information
                     # Shows a message if no image has been loaded or if no smear exists    
-                    dpg.add_button(label="Smear", pos=[10, 0.94*dpg.get_item_height("Transformations")], 
+                    dpg.add_button(label="Apply Transformation", pos=[10, 0.94*dpg.get_item_height("Transformations")], 
                                callback=self.smear, tag="smear")
                     dpg.add_text("No image selected.", pos=[10, 0.90*dpg.get_item_height("Transformations")], show=False, tag="text_SmearNoImageError")
-                    dpg.add_button(label="Save Smear", pos=[0.76*dpg.get_item_width("Transformations"), 0.94*dpg.get_item_height("Transformations")], 
+                    dpg.add_button(label="Save Output", pos=[0.76*dpg.get_item_width("Transformations"), 0.94*dpg.get_item_height("Transformations")], 
                                callback=lambda: dpg.show_item("text_SmearNoSmearError") if self._currentResult is None
                                  else dpg.show_item("getResultFolder"), tag="saveSmear")
-                    dpg.add_text("No smear exists.",
+                    dpg.add_text("No output exists.",
                                 pos=[0.68*dpg.get_item_width("Transformations"), 0.90*dpg.get_item_height("Transformations")], show=False, tag="text_SmearNoSmearError")
 
                 # Frame Selector Window
@@ -237,7 +251,7 @@ class GUI:
                     dpg.add_button(label="Save Frames", pos=[0.75*dpg.get_item_width("FrameSelector"), 0.94*dpg.get_item_height("FrameSelector")], 
                                callback=lambda: dpg.show_item("text_FrameNoSmearError") if self._currentResult is None else dpg.show_item("getFrameFolder"),
                                  tag="saveFrames")
-                    dpg.add_text("No smear exists.",
+                    dpg.add_text("No output exists.",
                                 pos=[0.68*dpg.get_item_width("FrameSelector"), 0.90*dpg.get_item_height("FrameSelector")], show=False, tag="text_FrameNoSmearError")
 
                 dpg.add_progress_bar(default_value=0, width=-1, overlay="0%", tag="smearProgress", pos=[7, dpg.get_item_height("window_Operations")-30])
@@ -264,7 +278,7 @@ class GUI:
             hwnd = windll.user32.FindWindowW(None, 'Curved Pixel Sorting via Simple Equations and Vector Fields')
             #pywinstyles.change_header_color(hwnd, color="black")
             pywinstyles.apply_style(hwnd,style="acrylic")
-            print("title color set")
+            # print("title color set")
 
         # dpg.start_dearpygui() 
 
@@ -272,12 +286,18 @@ class GUI:
         while dpg.is_dearpygui_running():
             # render loop
             # very bad hack to get the progress bar working
-            if(self.smear_runner is not None): #exists
+            if(self.vfgallery is not None):
+                if(self.vfgallery.generation_is_running()):
+                    self.setProgressBar(self.vfgallery.get_generation_progress(), "gen_fields")
+                else: # is done
+                    self.setProgressBar(1, "gen_fields")
+                    self.vfgallery = None
+            elif(self.smear_runner is not None): #exists
                 if(self.smear_runner.is_running()):
-                    self.setProgressBar(self.smear_runner.get_progress())
+                    self.setProgressBar(self.smear_runner.get_progress(), "render_out")
                     stack_isSet = False
                 elif not stack_isSet: # is finished
-                    self.setProgressBar(1.0)
+                    self.setProgressBar(1.0, "render_out")
                     frameNum = None
                     frame_stack = self.smear_runner.get_frame_stack()
                     for frame in range(self._maxFrames):
@@ -300,7 +320,6 @@ class GUI:
                     self.smear_runner = None
                     dpg.configure_item("selectedFrame", max_value = self._maxFrames)
             dpg.render_dearpygui_frame()
-            pass
         dpg.destroy_context()
 
     def on_viewport_resize(self, sender, app_data):
@@ -332,18 +351,27 @@ class GUI:
                 w, h, x, y = get_scaling(panel_tag, (origin_w,origin_h))
                 dpg.configure_item(img_tag, width=w, height=h, pos=[x,y])
 
-    def setProgressBar(self,progress):
+    def setProgressBar(self,progress, mode):
+        if(progress >= 1):
+            dpg.set_value("smearProgress",progress)
+            dpg.configure_item("smearProgress",overlay="operation complete")
+            return
         perc = f"{progress * 100:.2f}"
-        if progress < 0.33:
-            text = f"warping positions - {perc}%"
-        elif progress < 0.66:
-            text = f"smearing colors - {perc}%"
-        elif progress < 1:
-            text = f"rendering output - {perc}%"
-        else: # >= 1
-            text = f"rendering complete - {perc}%"
+        if(mode == "render_out"):
+            if progress < 0.33:
+                text = f"warping positions - {perc}%"
+            elif progress < 0.66:
+                text = f"smearing colors - {perc}%"
+            elif progress < 1:
+                text = f"rendering output - {perc}%"
+        elif(mode == "gen_fields"):
+            text = f"generating vector fields - {perc}%"
         dpg.set_value("smearProgress",progress)
         dpg.configure_item("smearProgress",overlay=text)
+
+    def genVectorFields(self, sender, app_data):
+        self.vfgallery = VectorFieldGallery()
+        self.vfgallery.generate_all_fields()
 
     # Get the file and shows it in the appropriate window
     def getFile(self, sender, app_data):
@@ -377,9 +405,7 @@ class GUI:
         selected = self._paramLabel.get(app_data)
         for function in self._paramLabel:
             current = self._paramLabel[function]
-            if current == 0:
-                pass
-            elif selected != current:
+            if selected != current:
                 dpg.hide_item(current)
             else:
                 dpg.show_item(current)
