@@ -176,7 +176,7 @@ class GUI:
                     with dpg.collapsing_header(label="Max Frames", tag="selectFrames"):
                         with dpg.child_window(label="MaxFramesWindow", width=360, height=75):
                             dpg.add_text("Set the value of max frames: ", pos=[10,10])
-                            dpg.add_input_int(tag="max_frames", pos=[10,30], width=75, callback = self.setMaxFrames, default_value=1,
+                            dpg.add_input_int(tag="max_frames", pos=[10,30], width=75, callback = self.setMaxFrames, default_value=10,
                                         min_value=1, min_clamped=True)
                     
                     # Selects a preset vector field and applies if it the user likes
@@ -255,7 +255,7 @@ class GUI:
         dpg.destroy_context()
 
     def setProgressBar(self,progress):
-        perc = round(progress*100,2)
+        perc = f"{progress * 100:.2f}"
         if progress < 0.33:
             text = f"warping positions - {perc}%"
         elif progress < 0.66:
