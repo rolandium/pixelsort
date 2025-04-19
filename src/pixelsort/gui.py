@@ -6,6 +6,16 @@ from pixelsort.imageOperations import get_scaling
 import dearpygui.dearpygui as dpg
 import numpy as np
 
+import platform
+if platform.system() == "Windows":
+    print("OS = WINDOWS")
+    from ctypes import windll
+    import pywinstyles
+    OS_WIN = True
+else:
+    print("OS != WINDOWS")
+    OS_WIN = False
+
 class GUI:
 
     # Constructor
@@ -96,6 +106,10 @@ class GUI:
                 funcs = ["---", "Masking", "Transformations", "Frame Selector"]
                 dpg.add_text("Select an operation:", pos=[10, 5])
                 dpg.add_combo(funcs, callback=self.getFunctionHeader, width=380, pos=[10, 30], default_value="---")
+
+                # intro window (---)
+                with dpg.child_window(label="---", width=380, height=490, pos=[10,55], show=False, tag="Intro"):
+                    pass
 
                 # Masking Window
                 with dpg.child_window(label="Masking", width=380, height=490, pos=[10, 55], show=False, tag="Masking"):
@@ -231,15 +245,29 @@ class GUI:
         # change child window height, width, position, on window size change
         dpg.set_viewport_resize_callback(callback=self.on_viewport_resize)
 
-        dpg.create_viewport(title='Pixelsmearing', width=1300, height=800, min_height=780, min_width=500)
+        dpg.create_viewport(title='Curved Pixel Sorting via Simple Equations and Vector Fields', width=1300, height=800, min_height=780, min_width=500)
         dpg.setup_dearpygui()
 
         # fire component size scaling once
         self.on_viewport_resize(None, None)
 
+        # set icon
+        dpg.set_viewport_large_icon(r"src\pixelsort\cpssevf_icon.ico")
+        dpg.set_viewport_small_icon(r"src\pixelsort\cpssevf_icon.ico")
+
         dpg.show_viewport()
         dpg.set_primary_window("Primary Window", True)
-        #dpg.start_dearpygui()
+
+        # windows specific titlebar styling
+        if(OS_WIN):
+            # hwnd = windll.user32.GetActiveWindow()
+            hwnd = windll.user32.FindWindowW(None, 'Curved Pixel Sorting via Simple Equations and Vector Fields')
+            #pywinstyles.change_header_color(hwnd, color="black")
+            pywinstyles.apply_style(hwnd,style="acrylic")
+            print("title color set")
+
+        # dpg.start_dearpygui() 
+
         stack_isSet = False
         while dpg.is_dearpygui_running():
             # render loop
