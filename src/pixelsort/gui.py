@@ -1,6 +1,7 @@
 from PIL import Image
 import pixelsort.pixelsmear as pixelsmear
 import pixelsort.imageOperations as imageOperations 
+from pixelsort.imageOperations import SmearRunner
 import dearpygui.dearpygui as dpg
 import numpy as np
 
@@ -29,6 +30,9 @@ class GUI:
         self._currentFrames = None
         self._currentResult = None
         
+        # hold the SmearRunner for later polling, give it garbage values to avoid crashes
+        self.smear_runner = None
+
         self._initDPG()
 
     def _initDPG(self):
@@ -207,7 +211,7 @@ class GUI:
                     # Allows the user to select a frame given the max number of frames they gave in "Transformations"
                     dpg.add_text("Selected Frame: ", pos=[10,10])
                     dpg.add_slider_int(tag="selectedFrame", no_input=False, pos=[10, 30],
-                                        min_value=1, callback=imageOperations.selectFrame, default_value=self._maxFrames)
+                                        min_value=1, max_value=1, callback=imageOperations.selectFrame, default_value=self._maxFrames)
                     dpg.add_button(label="Save Frames", pos=[0.75*dpg.get_item_width("FrameSelector"), 0.94*dpg.get_item_height("FrameSelector")], 
                                callback=lambda: dpg.show_item(123) if self._currentResult.any() == None else dpg.show_item("getFrameFolder"),
                                  tag="saveFrames")
@@ -219,8 +223,49 @@ class GUI:
         dpg.setup_dearpygui()
         dpg.show_viewport()
         dpg.set_primary_window("Primary Window", True)
-        dpg.start_dearpygui()
+        #dpg.start_dearpygui()
+        stack_isSet = False
+        while dpg.is_dearpygui_running():
+            # render loop
+            # very bad hack to get the progress bar working
+            if(self.smear_runner is not None): #exists
+                if(self.smear_runner.is_running()):
+                    self.setProgressBar(self.smear_runner.get_progress())
+                    stack_isSet = False
+                elif not stack_isSet: # is finished
+                    self.setProgressBar(1.0)
+                    frameNum = None
+                    frame_stack = self.smear_runner.get_frame_stack()
+                    for frame in range(self._maxFrames):
+                        frameNum = str(frame)
+                        smearFrame = frame_stack[frame]
+                        smeared_data = np.asarray(smearFrame, dtype=np.float32)  # change data type to 32bit floats
+                        texture_data = np.true_divide(smeared_data, 255.0)
+                        imgHeight, imgWidth = self.smear_runner.get_shape()
+                        dpg.add_raw_texture(width=imgWidth, height=imgHeight, default_value=texture_data, tag="frame"+frameNum, 
+                                            parent="registry_OutputImg",format=dpg.mvFormat_Float_rgba)
+                    
+                    dpg.add_image("frame"+frameNum, parent="panel_OutputImg", pos=[10,10])
+                    self._currentFrames = frame_stack
+                    self._currentResult = self._currentFrames[(self._maxFrames)-1]
+                    stack_isSet = True
+                    self.smear_runner = None
+            dpg.render_dearpygui_frame()
+            pass
         dpg.destroy_context()
+
+    def setProgressBar(self,progress):
+        perc = round(progress*100,2)
+        if progress < 0.33:
+            text = f"warping positions - {perc}%"
+        elif progress < 0.66:
+            text = f"smearing colors - {perc}%"
+        elif progress < 1:
+            text = f"rendering output - {perc}%"
+        else: # >= 1
+            text = f"rendering complete - {perc}%"
+        dpg.set_value("smearProgress",progress)
+        dpg.configure_item("smearProgress",overlay=text)
 
     # Get the file and shows it in the appropriate window
     def getFile(self, sender, app_data):
@@ -333,8 +378,10 @@ class GUI:
         else:
             dpg.hide_item(116)
             print("Smearing: ", self._currentFile)
-            self._currentFrames = imageOperations.doSmear(self, sender)
-            self._currentResult = self._currentFrames[(self._maxFrames)-1]
+            imageOperations.doSmear(self, sender)
+            # todo: refactor this
+            # self._currentFrames = imageOperations.doSmear(self, sender)
+            # self._currentResult = self._currentFrames[(self._maxFrames)-1]
 
     # Shows all the texture registries
     def showTexRegistries(sender):

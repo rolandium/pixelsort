@@ -1,7 +1,7 @@
 import dearpygui.dearpygui as dpg
 import numpy as np
 from PIL import Image
-import os
+import os, threading
 from pixelsort.masking import Mask
 from pixelsort.vectorfield import VectorField
 from pixelsort.vectorfieldgallery import VectorFieldGallery
@@ -189,45 +189,51 @@ def doSmear(self, sender):
     # Get the .npz file as well
     activateVF = dpg.get_value("doVectorField")
     if activateVF == True:
-        vfImgPath = vfGal.get_preview_image(selectedVF)
+        # vfImgPath = vfGal.get_preview_image(selectedVF)
         vecField = vfGal.get_vector_field(selectedVF)
         
-        vfWidth, vfHeight, _, vfData = dpg.load_image(vfImgPath)
+        # vfWidth, vfHeight, _, vfData = dpg.load_image(vfImgPath)
 
-        dpg.delete_item("registry_VF", children_only=True)
-        dpg.delete_item("panel_VectorField", children_only=True)
+        # dpg.delete_item("registry_VF", children_only=True)
+        # dpg.delete_item("panel_VectorField", children_only=True)
 
-        dpg.add_dynamic_texture(width=vfWidth, height=vfHeight, default_value=vfData, tag="vfImg", parent="registry_VF")
-        dpg.add_image("vfImg", parent="panel_VectorField", pos=[10,10])
+        # dpg.add_dynamic_texture(width=vfWidth, height=vfHeight, default_value=vfData, tag="vfImg", parent="registry_VF")
+        # dpg.add_image("vfImg", parent="panel_VectorField", pos=[10,10])
 
     # Initialize variables for PixelSmear
     imgPath = self._currentFile
     outPath = 'src/pixelsort/results/out.png'
     maskPath = self._maskPath
     t = self._maxFrames
-    smeared = PixelSmear(imgPath, outPath, maskPath, num_steps=int(t+1), dx_expr = strX, dy_expr = strY, doVF = activateVF, vf = vecField)
+    #smeared = PixelSmear(imgPath, outPath, maskPath, num_steps=int(t+1), dx_expr = strX, dy_expr = strY, doVF = activateVF, vf = vecField)
+
+    self.smear_runner = SmearRunner(imgPath, outPath, maskPath, num_steps=int(t+1), dx_expr = strX, dy_expr = strY, doVF = activateVF, vf = vecField)
 
     dpg.delete_item("panel_OutputImg", children_only=True)
     dpg.delete_item("registry_OutputImg", children_only=True)
 
-    smeared.run()
-    dpg.set_value("smearProgress", smeared.progress)
-    dpg.configure_item("smearProgress", overlay=f"{smeared.progress}%")
+    self.smear_runner.run()
+
+    #self.poll_smear_handler = dpg.add_handler_registry(tag="poll_handler")
+    #dpg.add_handler(dpg.mvHandlerFrame, callback=poll_smear, user_data=self, parent="poll_handler")
+
+    #dpg.set_value("smearProgress", smeared.progress)
+    #dpg.configure_item("smearProgress", overlay=f"{smeared.progress}%")
     
     # Store all the frames into the registry
-    frameNum = None
-    for frame in range(t):
-        frameNum = str(frame)
-        smearFrame = smeared.frame_stack[frame]
-        smeared_data = np.asarray(smearFrame, dtype=np.float32)  # change data type to 32bit floats
-        texture_data = np.true_divide(smeared_data, 255.0)
-        imgHeight, imgWidth = smeared.height, smeared.width
-        dpg.add_raw_texture(width=imgWidth, height=imgHeight, default_value=texture_data, tag="frame"+frameNum, 
-                            parent="registry_OutputImg",format=dpg.mvFormat_Float_rgba)
+    # frameNum = None
+    # for frame in range(t):
+    #     frameNum = str(frame)
+    #     smearFrame = smeared.frame_stack[frame]
+    #     smeared_data = np.asarray(smearFrame, dtype=np.float32)  # change data type to 32bit floats
+    #     texture_data = np.true_divide(smeared_data, 255.0)
+    #     imgHeight, imgWidth = smeared.height, smeared.width
+    #     dpg.add_raw_texture(width=imgWidth, height=imgHeight, default_value=texture_data, tag="frame"+frameNum, 
+    #                         parent="registry_OutputImg",format=dpg.mvFormat_Float_rgba)
     
-    dpg.add_image("frame"+frameNum, parent="panel_OutputImg", pos=[10,10])
-    print("Finished")
-    return smeared.frame_stack
+    # dpg.add_image("frame"+frameNum, parent="panel_OutputImg", pos=[10,10])
+    # print("Finished")
+    # return smeared.frame_stack
 
 # Select a frame from Frame Selector
 def selectFrame(sender, app_data):
@@ -235,4 +241,61 @@ def selectFrame(sender, app_data):
     frameNum = str(app_data-1)
     dpg.add_image("frame"+frameNum, parent="panel_OutputImg", pos=[10,10])
 
+class SmearRunner:
+    """
+    Initializes a PixelSmear instance with the provided variables, and runs it in a separate thread.
+    Has functions to provide status about the current computation, including blocking functions.
+    """
+    def __init__(self,imgPath,outPath,maskPath,num_steps,dx_expr,dy_expr,doVF,vf):
+        # just a translation layer between the main thread and the smearing thread.
+        self.imgPath = imgPath
+        self.outPath = outPath
+        self.maskPath = maskPath
+        self.numSteps = num_steps
+        self.dx_expr = dx_expr
+        self.dy_expr = dy_expr
+        self.doVF = doVF
+        self.vf = vf
+        
+        self._smear = None
+        self._runner = None
+        self._lock = threading.Lock()
+        self._finished = False
+        self._frames = None
+    
+    def _runnerFn(self):
+        self._smear.run()
+        # should be blocking here until the computation is finished.
+        self._finished = True        
 
+    def run(self):
+        with self._lock:
+            self._smear = PixelSmear(self.imgPath, self.outPath, self.maskPath, num_steps=self.numSteps, 
+                            dx_expr=self.dx_expr, dy_expr=self.dy_expr, doVF=self.doVF, vf=self.vf)
+            self._thread = threading.Thread(target=self._runnerFn)
+            self._thread.start()
+
+    def is_running(self):
+        with self._lock:
+            return self._thread and not self._finished
+
+    def is_finished(self):
+        with self._lock:
+            return self._finished
+
+    def wait_for_completion(self):
+        if self._thread:
+            self._thread.join()
+        pass
+
+    def get_shape(self):
+        with self._lock:
+            return (self._smear.height,self._smear.width)
+
+    def get_progress(self):
+        with self._lock:
+            return self._smear.progress
+
+    def get_frame_stack(self):
+        with self._lock:
+            return self._smear.frame_stack
