@@ -1,10 +1,10 @@
 import dearpygui.dearpygui as dpg
 import numpy as np
 from PIL import Image
-from masking import Mask
-from vectorfield import VectorField
-from vectorfieldgallery import VectorFieldGallery
-from pixelsmear import PixelSmear
+from pixelsort.masking import Mask
+from pixelsort.vectorfield import VectorField
+from pixelsort.vectorfieldgallery import VectorFieldGallery
+from pixelsort.pixelsmear import PixelSmear
 
 # callback + cancel_callback use to find sender, app_data, and user_data
 def callback(sender, app_data, user_data):
