@@ -6,7 +6,8 @@ from pixelsort.vectorfield import VectorField
 
 class PixelSmear:
     #initialize threshold (70, 100) and num_step = 10
-    def __init__(self, img_path, out_path, mask_path=None, threshold=(70, 100), num_steps=10,dx_expr="1", dy_expr="2*t/5"):
+    def __init__(self, img_path, out_path, mask_path=None, threshold=(70, 100), num_steps=10,
+                 dx_expr="1", dy_expr="2*t/5", doVF=False, vf = VectorField(0,0)):
         self.img_path = img_path
         self.out_path = out_path
         self.mask_path = mask_path
@@ -34,8 +35,8 @@ class PixelSmear:
         self.dy_func = self.string_to_function(dy_expr)
 
         # vector field input
-        self.vf = VectorField(0,0)
-        self.usingVF = False
+        self.vf = vf
+        self.usingVF = doVF
 
         self.progress = 0.0
 
@@ -103,12 +104,11 @@ class PixelSmear:
     def warp_positions(self, mask):
         for y in range(self.height):
             for x in range(self.width):
-                if self.mask[y, x]:
+                if mask[y, x]:
                     self.positions[0, y, x] = [y, x]
 
         for t in range(1, self.num_steps):
-            self.progress += (1/self.num_steps) * 0.33
-            print(f"progress: {self.progress}", end='\r', flush=True)
+            print(f"warping: t={t + 1}/{self.num_steps}", end='\r', flush=True)
             dx = float(self.dx_func(t))
             dy = float(self.dy_func(t))
             for y in range(self.height):
@@ -117,7 +117,7 @@ class PixelSmear:
                         v = self.vf.get_vector(y,x)
                         dx = v.x
                         dy = v.y
-                    if not self.mask[y, x]:
+                    if not mask[y, x]:
                         continue
                     prev = self.positions[t - 1, y, x]
                     if np.isnan(prev[0]):

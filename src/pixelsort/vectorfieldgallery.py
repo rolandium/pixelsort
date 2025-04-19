@@ -3,7 +3,7 @@ import numpy as np
 from PIL import Image
 from pixelsort.vectorfield import Vector, VectorField
 
-DIRECTORY = "vector_fields"
+DIRECTORY = "src/pixelsort/vector fields"
 
 class VectorFieldGallery:
     def __init__(self, directory=DIRECTORY):
@@ -28,9 +28,9 @@ class VectorFieldGallery:
         vf.load(info['npz'])
         return vf
     
-    def get_preview_image(self, name) -> Image:
+    def get_preview_image(self, name) -> str:
         info = self.index.get(name)
-        return Image.open(info['png'])
+        return info['png']
     
     def list_fields(self):
         return sorted(self.index.keys())
