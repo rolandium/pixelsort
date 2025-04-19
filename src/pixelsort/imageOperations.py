@@ -120,6 +120,25 @@ def makeMask(self, sender):
     im.close()
     return maskPath
     
+def showVF(self,sender):
+    vfGal = VectorFieldGallery("src/pixelsort/vector_fields")
+    vfHeader = dpg.get_item_children("VectorField")
+    selectedVF = dpg.get_value(vfHeader[1][1])
+    if selectedVF == "Chaotic Spiral":
+        selectedVF = "chaotic_spiral"
+    
+    selectedVF = selectedVF.lower()
+    vfImgPath = vfGal.get_preview_image(selectedVF)
+    vecField = vfGal.get_vector_field(selectedVF)
+    
+    vfWidth, vfHeight, _, vfData = dpg.load_image(vfImgPath)
+
+    dpg.delete_item(24, children_only=True)
+    dpg.delete_item(48, children_only=True)
+
+    dpg.add_dynamic_texture(width=vfWidth, height=vfHeight, default_value=vfData, tag="vfImg", parent=24)
+    dpg.add_image("vfImg", parent=48, pos=[10,10])
+
 def doSmear(self, sender):
 
     # Gets the Direction + VectorField windows

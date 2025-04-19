@@ -3,7 +3,7 @@ import numpy as np
 from PIL import Image
 from pixelsort.vectorfield import Vector, VectorField
 
-DIRECTORY = "src/pixelsort/vector fields"
+DIRECTORY = "src/pixelsort/vector_fields"
 
 class VectorFieldGallery:
     def __init__(self, directory=DIRECTORY):

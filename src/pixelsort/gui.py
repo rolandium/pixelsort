@@ -1,6 +1,6 @@
 from PIL import Image
-import pixelsmear as pixelsmear
-import imageOperations as imageOperations 
+import pixelsort.pixelsmear as pixelsmear
+import pixelsort.imageOperations as imageOperations 
 import dearpygui.dearpygui as dpg
 import numpy as np
 
@@ -182,7 +182,7 @@ class GUI:
                             dpg.add_text("Select a preset vector field: ", pos=[10,10])
                             presetField = ["Border", "Chaotic Spiral", "Collapse", "Cross", "Explosion",
                                             "Orbit", "Plus", "Spiral","Star", "Wave"]
-                            dpg.add_combo(presetField, width=200, default_value="Border", 
+                            dpg.add_combo(presetField, width=200, default_value="Border", callback=imageOperations.showVF,
                                             pos=[10, 30], tag="presetField")
                             dpg.add_text("Apply vector field?", pos=[10, 60])
                             dpg.add_checkbox(tag="doVectorField",pos =[200, 60])

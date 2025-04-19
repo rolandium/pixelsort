@@ -1,4 +1,4 @@
-from gui import GUI
+from pixelsort.gui import GUI
 
 
 def main():
