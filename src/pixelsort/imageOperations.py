@@ -36,7 +36,10 @@ def showImage(imagePath, self):
     dpg.add_dynamic_texture(width=width, height=height, default_value=data, tag="baseImg", parent="registry_BaseImg") 
 
     # print("trying to add to registry")
-    dpg.add_image("baseImg", parent="panel_BaseImg", pos=[10,10])
+    w, h, x, y = get_scaling("panel_BaseImg",(width,height))
+    print(f"showImage | w={w} h={h} x={x} y={y}")
+
+    dpg.add_image("baseImg", width=w, height=h, parent="panel_BaseImg", pos=[x,y])
 
 # Depending on the type of save, do the following
 def saveImage(self, folderPath, typeSave):
@@ -118,11 +121,34 @@ def makeMask(self, sender):
 
     dpg.add_dynamic_texture(width=maskWidth, height=maskHeight, default_value=maskData, tag="maskImg", parent="registry_MaskImg")
 
-    dpg.add_image("maskImg", parent="panel_MaskImg", pos=[10,10])
+    w, h, x, y = get_scaling("panel_MaskImg",(maskWidth,maskHeight))
+
+    dpg.add_image("maskImg", width=w, height=h, parent="panel_MaskImg", pos=[x,y])
     
     im.close()
     return maskPath
     
+def get_scaling(panel_tag,img_dimensions):
+    """
+    Returns the scaled width and height, along with the middle position
+    to place the given img dimensions in the the middle of the panel
+    """
+    width, height = img_dimensions
+
+    panel_height = dpg.get_item_height(panel_tag)
+    panel_width = dpg.get_item_width(panel_tag)
+
+    scaling = min(panel_width/width, panel_height/height)
+
+    additional_padding = 0.95
+
+    scaled_width = scaling * width * additional_padding
+    scaled_height = scaling * height * additional_padding
+
+    position = [(panel_width-scaled_width)/2, (panel_height-scaled_height)/2]
+
+    return scaled_width, scaled_height, position[0], position[1]
+
 def showVF(self,sender):
     vfGal = VectorFieldGallery("src/pixelsort/vector_fields")
     vfHeader = dpg.get_item_children("VectorField")
@@ -132,7 +158,6 @@ def showVF(self,sender):
     
     selectedVF = selectedVF.lower()
     vfImgPath = vfGal.get_preview_image(selectedVF)
-    vecField = vfGal.get_vector_field(selectedVF)
     
     vfWidth, vfHeight, _, vfData = dpg.load_image(vfImgPath)
 
@@ -140,7 +165,11 @@ def showVF(self,sender):
     dpg.delete_item("panel_VectorField", children_only=True)
 
     dpg.add_dynamic_texture(width=vfWidth, height=vfHeight, default_value=vfData, tag="vfImg", parent="registry_VF")
-    dpg.add_image("vfImg", parent="panel_VectorField", pos=[10,10])
+    # from https://github.com/hoffstadt/DearPyGui/discussions/1789#discussioncomment-2881052
+    
+    w, h, x, y = get_scaling("panel_VectorField",(vfWidth,vfHeight))
+
+    dpg.add_image("vfImg", width=w , height=h, parent="panel_VectorField", pos=[x,y])
 
 def doSmear(self, sender):
 
@@ -236,10 +265,16 @@ def doSmear(self, sender):
     # return smeared.frame_stack
 
 # Select a frame from Frame Selector
-def selectFrame(sender, app_data):
+def selectFrame(sender, app_data, gui):
     dpg.delete_item("panel_OutputImg", children_only=True)
     frameNum = str(app_data-1)
-    dpg.add_image("frame"+frameNum, parent="panel_OutputImg", pos=[10,10])
+
+    width = gui._frameWidth 
+    height = gui._frameHeight
+
+    w, h, x, y = get_scaling("panel_OutputImg",(width,height))
+
+    dpg.add_image("frame"+frameNum, width=w, height=h, parent="panel_OutputImg", pos=[x,y])
 
 class SmearRunner:
     """
@@ -272,20 +307,20 @@ class SmearRunner:
         with self._lock:
             self._smear = PixelSmear(self.imgPath, self.outPath, self.maskPath, num_steps=self.numSteps, 
                             dx_expr=self.dx_expr, dy_expr=self.dy_expr, doVF=self.doVF, vf=self.vf)
-            self._thread = threading.Thread(target=self._runnerFn)
-            self._thread.start()
+            self._runner = threading.Thread(target=self._runnerFn)
+            self._runner.start()
 
     def is_running(self):
         with self._lock:
-            return self._thread and not self._finished
+            return self._runner and not self._finished
 
     def is_finished(self):
         with self._lock:
             return self._finished
 
     def wait_for_completion(self):
-        if self._thread:
-            self._thread.join()
+        if self._runner:
+            self._runner.join()
         pass
 
     def get_shape(self):

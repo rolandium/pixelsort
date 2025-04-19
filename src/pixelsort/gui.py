@@ -2,6 +2,7 @@ from PIL import Image
 import pixelsort.pixelsmear as pixelsmear
 import pixelsort.imageOperations as imageOperations 
 from pixelsort.imageOperations import SmearRunner
+from pixelsort.imageOperations import get_scaling
 import dearpygui.dearpygui as dpg
 import numpy as np
 
@@ -29,7 +30,9 @@ class GUI:
         self._maxFrames = 1
         self._currentFrames = None
         self._currentResult = None
-        
+        self._frameHeight = 1
+        self._frameWidth = 1
+
         # hold the SmearRunner for later polling, give it garbage values to avoid crashes
         self.smear_runner = None
 
@@ -212,14 +215,13 @@ class GUI:
                     # Allows the user to select a frame given the max number of frames they gave in "Transformations"
                     dpg.add_text("Selected Frame: ", pos=[10,10])
                     dpg.add_slider_int(tag="selectedFrame", no_input=False, pos=[10, 30],
-                                        min_value=1, max_value=1, callback=imageOperations.selectFrame, default_value=self._maxFrames)
+                                        min_value=1, max_value=1, callback=imageOperations.selectFrame, user_data=self, default_value=self._maxFrames)
                     dpg.add_button(label="Save Frames", pos=[0.75*dpg.get_item_width("FrameSelector"), 0.94*dpg.get_item_height("FrameSelector")], 
                                callback=lambda: dpg.show_item("text_FrameNoSmearError") if self._currentResult is None else dpg.show_item("getFrameFolder"),
                                  tag="saveFrames")
                     dpg.add_text("No smear exists.",
                                 pos=[0.68*dpg.get_item_width("FrameSelector"), 0.90*dpg.get_item_height("FrameSelector")], show=False, tag="text_FrameNoSmearError")
 
-                # PROGRESS BAR WOULD GO HERE?  
                 dpg.add_progress_bar(default_value=0, width=-1, overlay="0%", tag="smearProgress", pos=[7, dpg.get_item_height("window_Operations")-30])
 
 
@@ -246,14 +248,18 @@ class GUI:
                         smeared_data = np.asarray(smearFrame, dtype=np.float32)  # change data type to 32bit floats
                         texture_data = np.true_divide(smeared_data, 255.0)
                         imgHeight, imgWidth = self.smear_runner.get_shape()
+                        self._frameHeight = imgHeight
+                        self._frameWidth = imgWidth
                         dpg.add_raw_texture(width=imgWidth, height=imgHeight, default_value=texture_data, tag="frame"+frameNum, 
                                             parent="registry_OutputImg",format=dpg.mvFormat_Float_rgba)
                     
-                    dpg.add_image("frame"+frameNum, parent="panel_OutputImg", pos=[10,10])
+                    w, h, x , y = get_scaling("panel_OutputImg",(imgWidth,imgHeight))
+                    dpg.add_image("frame"+frameNum, parent="panel_OutputImg", width=w, height=h, pos=[x,y])
                     self._currentFrames = frame_stack
                     self._currentResult = self._currentFrames[(self._maxFrames)-1]
                     stack_isSet = True
                     self.smear_runner = None
+                    dpg.configure_item("selectedFrame", max_value = self._maxFrames)
             dpg.render_dearpygui_frame()
             pass
         dpg.destroy_context()
@@ -313,9 +319,9 @@ class GUI:
     # Enables the interaction of the Gaussian input and Box inputs
     def enableGaussian(object, sender, app_data):
         if app_data == True:
-            dpg.configure_item(64, enabled=True)
+            dpg.configure_item("blurStrength", enabled=True)
         else:
-            dpg.configure_item(64, enabled=False)
+            dpg.configure_item("blurStrength", enabled=False)
 
     # If the user wishes to have bounding boxes, enable the text fields
     def enableBoxes(self, sender, app_data):
@@ -397,4 +403,4 @@ class GUI:
     # Sets the max frames
     def setMaxFrames(self, sender, app_data):
         self._maxFrames = app_data
-        dpg.configure_item("selectedFrame", max_value = self._maxFrames)
+        # dpg.configure_item("selectedFrame", max_value = self._maxFrames)
