@@ -98,18 +98,19 @@ class PixelSmear:
 
         for t in range(1, self.num_steps):
             print(f"warping: t={t + 1}/{self.num_steps}", end='\r', flush=True)
-            if(self.usingVF):
-                v = self.vf.get_vector(y,x)
-                dx = v.x
-                dy = v.y
-            else:
-                dx = float(self.dx_func(t))
-                dy = float(self.dy_func(t))
+            dx = float(self.dx_func(t))
+            dy = float(self.dy_func(t))
             for y in range(self.height):
                 for x in range(self.width):
+                    if(self.usingVF):
+                        v = self.vf.get_vector(y,x)
+                        dx = v.x
+                        dy = v.y
                     if not self.mask[y, x]:
                         continue
                     prev = self.positions[t - 1, y, x]
+                    if np.isnan(prev[0]):
+                        continue
                     self.positions[t, y, x] = prev + np.array([dy, dx])
                      # ignore pixel
                     # rate of change
@@ -213,6 +214,9 @@ class PixelSmear:
     #run Pixelsmear
     def run(self):
         mask = self.generate_mask()
+        self.vf = VectorField(self.height,self.width)
+        self.vf.orbit_transform()
+        self.usingVF = True
         self.warp_positions(mask)
         self.smear_colors()
         self.render()
