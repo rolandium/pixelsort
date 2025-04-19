@@ -48,6 +48,14 @@ class PixelSmear:
         r, g, b = pixel
         return 0.299 * r + 0.587 * g + 0.114 * b
 
+    def random_falloff(self,x,threshold,steepness) -> bool:
+        """
+        Defines the value of a sigmoid curve at x, and uses it to get a random boolean value
+        Used when determining random line length in the warping step
+        """
+        p = 1 / (1 + np.exp(-steepness * (x - threshold)))
+        return np.random.rand() < p
+
     #generate a mask base on the image
     def generate_mask(self):
         greyscale = np.array(ImageOps.grayscale(self.image))
@@ -111,7 +119,11 @@ class PixelSmear:
                     prev = self.positions[t - 1, y, x]
                     if np.isnan(prev[0]):
                         continue
-                    self.positions[t, y, x] = prev + np.array([dy, dx])
+                    # random line length, can end after 4/5th or so of the line's full length
+                    if(self.random_falloff(t, self.num_steps - self.num_steps/5,0.5)):
+                        self.positions[t,y,x] = (np.nan, np.nan)
+                    else:
+                        self.positions[t, y, x] = prev + np.array([dy, dx])
                      # ignore pixel
                     # rate of change
                     # i.e a line defined by y = mx+b
@@ -126,8 +138,12 @@ class PixelSmear:
                     continue
                 min_col = self.image_np[y, x]
                 max_col = self.image_np[y, x]
+                len = self.num_steps
                 for t in range(1, self.num_steps):
                     pos = self.positions[t, y, x]
+                    if(np.isnan(pos[0])):
+                        len = t
+                        break
                     # eps = 1e-6
                     # pos_y = np.clip(pos[0], 0, height - 1 - eps)
                     # pos_x = np.clip(pos[1], 0, width - 1 - eps)
@@ -154,7 +170,7 @@ class PixelSmear:
                     if (self.getValue(max_col) < self.getValue(pixel)):
                         max_col = pixel
                 # min and max colours are populated, apply gradient through all of t
-                for t in range(self.num_steps):
+                for t in range(len):
                     # linear interpolation
                     self.colors[t, y, x] = min_col + (max_col - min_col) * (t / self.num_steps)
 
@@ -214,9 +230,6 @@ class PixelSmear:
     #run Pixelsmear
     def run(self):
         mask = self.generate_mask()
-        self.vf = VectorField(self.height,self.width)
-        self.vf.orbit_transform()
-        self.usingVF = True
         self.warp_positions(mask)
         self.smear_colors()
         self.render()
@@ -229,7 +242,9 @@ if __name__ == "__main__":
         mask_path="/Users/roland/Desktop/cmpt461/pixelsort/src/pixelsort/mask.png",
         threshold=(70, 100),
         num_steps=25,
-        dx_expr="1",
-        dy_expr="2 * t / 5"
+        #dx_expr="1",
+        #dy_expr="2 * t / 5"
+        dx_expr="2",
+        dy_expr="2"
     )
     smear.run()
