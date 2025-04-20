@@ -17,6 +17,9 @@ else:
     # print("OS != WINDOWS")
     OS_WIN = False
 
+ICON_PATH = "assets/cpssevf_icon.ico"
+DIR_VECTORFIELDS = "assets/vector_fields/"
+
 class GUI:
 
     # Constructor
@@ -40,7 +43,7 @@ class GUI:
         }
 
         # Parameters for Transformations and Frame Selector
-        self._maxFrames = 1
+        self._maxFrames = 10
         self._currentFrames = None
         self._currentResult = None
         self._frameHeight = 1
@@ -59,6 +62,8 @@ class GUI:
         self._initDPG()
 
     def _initDPG(self):
+        color_red = [255,0,0,255]
+
         dpg.create_context()
 
         # Initialize registries where the images will be stored
@@ -116,7 +121,7 @@ class GUI:
                 # intro window (---)
                 with dpg.child_window(label="---", width=380, height=490, pos=[10,55], show=True, tag="Intro"):
                     dpg.add_text("Welcome.\n\nIf this is your first time, generate the pre-made \nVector Fields using the button below.", pos=[10,10])
-                    dpg.add_text("note: directory already exists.",pos=[10,70], show=os.path.isdir("src/pixelsort/vector_fields"))
+                    dpg.add_text("note: directory already exists.",pos=[10,70], show=os.path.isdir(DIR_VECTORFIELDS),color=color_red)
                     dpg.add_button(label="Generate Vector Fields", pos=[10, 90], 
                                callback=self.genVectorFields, tag="button_GenerateVectorFields")
                     dpg.add_text("Quick Start:" \
@@ -178,12 +183,12 @@ class GUI:
                     # Shows a message if no image has been loaded or if no mask exists
                     dpg.add_button(label="Create Mask", pos=[10, 0.94*dpg.get_item_height("Masking")], 
                                callback=self.makeMask, tag="makeMask")
-                    dpg.add_text("No image selected.", pos=[10, 0.90*dpg.get_item_height("Masking")], show=False)
+                    dpg.add_text("No image selected.", pos=[10, 0.90*dpg.get_item_height("Masking")], show=False, color=color_red)
 
                     dpg.add_button(label="Save Mask", pos=[0.78*dpg.get_item_width("Masking"), 0.94*dpg.get_item_height("Masking")], 
                                callback=lambda: dpg.show_item(88) if self._maskPath == None else dpg.show_item("getMaskFolder"),
                                  tag="saveMask")
-                    dpg.add_text("No mask exists.", pos=[0.68*dpg.get_item_width("Masking"), 0.90*dpg.get_item_height("Masking")], show=False, tag="text_NoMaskError")
+                    dpg.add_text("No mask exists.", pos=[0.68*dpg.get_item_width("Masking"), 0.90*dpg.get_item_height("Masking")], show=False, tag="text_NoMaskError", color=color_red)
 
                 # Transformation Window
                 with dpg.child_window(label="Transformations", width=380, height=610, pos=[10, 55], show=False, tag="Transformations"):
@@ -240,12 +245,11 @@ class GUI:
                     # Shows a message if no image has been loaded or if no smear exists    
                     dpg.add_button(label="Apply Transformation", pos=[10, dpg.get_item_height("Transformations") - 30], 
                                callback=self.smear, tag="smear")
-                    dpg.add_text("No image selected.", pos=[10, dpg.get_item_height("Transformations") - 50], show=False, tag="text_SmearNoImageError")
-                    dpg.add_button(label="Save Output", pos=[0.76*dpg.get_item_width("Transformations"), dpg.get_item_height("Transformations") - 30], 
-                               callback=lambda: dpg.show_item("text_SmearNoSmearError") if self._currentResult is None
-                                 else dpg.show_item("getResultFolder"), tag="saveSmear")
+                    dpg.add_text("No image selected.", pos=[10, dpg.get_item_height("Transformations") - 50], show=False, tag="text_SmearNoImageError", color=color_red)
                     dpg.add_text("No output exists.",
-                                pos=[0.68*dpg.get_item_width("Transformations"), dpg.get_item_height("Transformations") - 50], show=False, tag="text_SmearNoSmearError")
+                                pos=[0.68*dpg.get_item_width("Transformations"), dpg.get_item_height("Transformations") - 50], show=False, tag="text_SmearNoSmearError", color=color_red)
+                    dpg.add_button(label="Save Output", pos=[0.76*dpg.get_item_width("Transformations"), dpg.get_item_height("Transformations") - 30], 
+                               callback=self.handle_no_smear, user_data="getResultFolder", tag="saveSmear")
 
                 # Frame Selector Window
                 with dpg.child_window(label="Frame Selector", width=380, height=490, pos=[10, 55], show=False, tag="FrameSelector"):
@@ -254,11 +258,10 @@ class GUI:
                     dpg.add_text("Selected Frame: ", pos=[10,10])
                     dpg.add_slider_int(tag="selectedFrame", no_input=False, pos=[10, 30],
                                         min_value=1, max_value=1, callback=imageOperations.selectFrame, user_data=self, default_value=self._maxFrames)
-                    dpg.add_button(label="Save Frames", pos=[0.75*dpg.get_item_width("FrameSelector"), 0.94*dpg.get_item_height("FrameSelector")], 
-                               callback=lambda: dpg.show_item("text_FrameNoSmearError") if self._currentResult is None else dpg.show_item("getFrameFolder"),
-                                 tag="saveFrames")
                     dpg.add_text("No output exists.",
-                                pos=[0.68*dpg.get_item_width("FrameSelector"), 0.90*dpg.get_item_height("FrameSelector")], show=False, tag="text_FrameNoSmearError")
+                                pos=[0.68*dpg.get_item_width("FrameSelector"), 0.90*dpg.get_item_height("FrameSelector")], show=False, tag="text_FrameNoSmearError", color=color_red)
+                    dpg.add_button(label="Save Frames", pos=[0.75*dpg.get_item_width("FrameSelector"), 0.94*dpg.get_item_height("FrameSelector")], 
+                               callback=self.handle_no_smear, user_data="getFrameFolder", tag="saveFrames")
 
                 dpg.add_progress_bar(default_value=0, width=-1, overlay="0%", tag="smearProgress", pos=[7, dpg.get_item_height("window_Operations")-30])
 
@@ -272,8 +275,8 @@ class GUI:
         self.on_viewport_resize(None, None)
 
         # set icon
-        dpg.set_viewport_large_icon(r"src\pixelsort\cpssevf_icon.ico")
-        dpg.set_viewport_small_icon(r"src\pixelsort\cpssevf_icon.ico")
+        dpg.set_viewport_large_icon(ICON_PATH)
+        dpg.set_viewport_small_icon(ICON_PATH)
 
         dpg.show_viewport()
         dpg.set_primary_window("Primary Window", True)
@@ -328,6 +331,21 @@ class GUI:
                     dpg.set_value("tabBar_Images","tab_OutputImg")
             dpg.render_dearpygui_frame()
         dpg.destroy_context()
+
+    def handle_no_smear(self, sender, app_data, folder):
+        if(folder == "getResultFolder"):
+            if(self._currentResult is None):
+                dpg.show_item("text_SmearNoSmearError")
+            else:
+                dpg.hide_item("text_SmearNoSmearError")
+                dpg.show_item("getResultFolder") 
+        elif(folder == "getFrameFolder"):
+            if(self._currentResult is None):
+                dpg.show_item("text_FrameNoSmearError")
+            else:
+                dpg.hide_item("text_FrameNoSmearError")
+                dpg.show_item("getFrameFolder") 
+
 
     def on_viewport_resize(self, sender, app_data):
         """

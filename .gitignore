@@ -1,4 +1,8 @@
 src/pixelsort/vector_fields
+vector_fields/
+assets/vector_fields
+assets/mask
+assets/results
 src/pixelsort/mask
 src/pixelsort/results
 src/pixelsort/__pycache__

@@ -7,6 +7,10 @@ from pixelsort.vectorfield import VectorField
 from pixelsort.vectorfieldgallery import VectorFieldGallery
 from pixelsort.pixelsmear import PixelSmear
 
+PATH_RESULTS = "assets/results/"
+PATH_MASK = "assets/mask/"
+PATH_VECTORFIELDS = "assets/vector_fields"
+
 # callback + cancel_callback use to find sender, app_data, and user_data
 def callback(sender, app_data, user_data):
     print('OK was clicked.')
@@ -112,9 +116,9 @@ def makeMask(self, sender):
     newMask = mask.getMask(typeMask, gauss_strength)
 
     # Save the image internally and update the Mask Window
-    if(not os.path.isdir('src/pixelsort/mask/')):
-        os.mkdir('src/pixelsort/mask/')
-    maskPath = 'src/pixelsort/mask/mask.png'
+    if(not os.path.isdir(PATH_MASK)):
+        os.mkdir(PATH_MASK)
+    maskPath = os.path.join(PATH_MASK,"mask.png")
     newMask.save(maskPath)
     maskWidth, maskHeight, _, maskData = dpg.load_image(maskPath)
     
@@ -152,7 +156,7 @@ def get_scaling(panel_tag,img_dimensions):
     return scaled_width, scaled_height, position[0], position[1]
 
 def showVF(sender, app_data, gui):
-    vfGal = VectorFieldGallery("src/pixelsort/vector_fields")
+    vfGal = VectorFieldGallery(PATH_VECTORFIELDS)
     vfHeader = dpg.get_item_children("VectorField")
     selectedVF = dpg.get_value(vfHeader[1][1])
     if selectedVF == "Chaotic Spiral":
@@ -215,7 +219,7 @@ def doSmear(self, sender):
         selectedVF = "chaotic_spiral"
     
     selectedVF = selectedVF.lower()
-    vfGal = VectorFieldGallery("src/pixelsort/vector_fields")
+    vfGal = VectorFieldGallery(PATH_VECTORFIELDS)
     vecField = VectorField(0,0)
 
     # If doVF is true, load the Vector Field into the Vector Field Window
@@ -235,7 +239,9 @@ def doSmear(self, sender):
 
     # Initialize variables for PixelSmear
     imgPath = self._currentFile
-    outPath = 'src/pixelsort/results/out.png'
+    if(not os.path.isdir(PATH_RESULTS)):
+        os.mkdir(PATH_RESULTS)
+    outPath = os.path.join(PATH_RESULTS,"out.png")#'src/pixelsort/results/out.png' 
     maskPath = self._maskPath
     t = self._maxFrames
     #smeared = PixelSmear(imgPath, outPath, maskPath, num_steps=int(t+1), dx_expr = strX, dy_expr = strY, doVF = activateVF, vf = vecField)

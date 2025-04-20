@@ -3,7 +3,7 @@ import numpy as np
 from PIL import Image
 from pixelsort.vectorfield import Vector, VectorField
 
-DIRECTORY = "src/pixelsort/vector_fields"
+DIRECTORY = "assets/vector_fields"
 
 class VectorFieldGallery:
     """
@@ -12,8 +12,8 @@ class VectorFieldGallery:
     """
     def __init__(self, directory=DIRECTORY):
         # make the vector field directory if it does not exist.
-        if(not os.path.isdir(DIRECTORY)):
-            os.mkdir(DIRECTORY)
+        if(not os.path.isdir(directory)):
+            os.mkdir(directory)
         self.directory = directory
         self.index = {}
         self._scan_directory()
@@ -73,25 +73,25 @@ class VectorFieldGallery:
 
     def _gen_fields(self):
         self._gen_progress = 0.0
-        vfg_make_and_save(vfg_gen_collapse,"collapse")
+        vfg_make_and_save(vfg_gen_collapse,"collapse",self.directory)
         self._gen_progress = 0.1
-        vfg_make_and_save(vfg_gen_explosion,"explosion")
+        vfg_make_and_save(vfg_gen_explosion,"explosion",self.directory)
         self._gen_progress = 0.2
-        vfg_make_and_save(vfg_gen_borderrun,"border")
+        vfg_make_and_save(vfg_gen_borderrun,"border",self.directory)
         self._gen_progress = 0.3
-        vfg_make_and_save(vfg_gen_plus,"plus")
+        vfg_make_and_save(vfg_gen_plus,"plus",self.directory)
         self._gen_progress = 0.4
-        vfg_make_and_save(vfg_gen_cross,"cross")
+        vfg_make_and_save(vfg_gen_cross,"cross",self.directory)
         self._gen_progress = 0.5
-        vfg_make_and_save(vfg_gen_eightstar,"star")
+        vfg_make_and_save(vfg_gen_eightstar,"star",self.directory)
         self._gen_progress = 0.6
-        vfg_make_and_save(vfg_gen_spiral,"spiral")
+        vfg_make_and_save(vfg_gen_spiral,"spiral",self.directory)
         self._gen_progress = 0.7
-        vfg_make_and_save(vfg_gen_chaotic_spiral,"chaotic_spiral")
+        vfg_make_and_save(vfg_gen_chaotic_spiral,"chaotic_spiral",self.directory)
         self._gen_progress = 0.8
-        vfg_make_and_save(vfg_gen_orbit,"orbit")
+        vfg_make_and_save(vfg_gen_orbit,"orbit",self.directory)
         self._gen_progress = 0.9
-        vfg_make_and_save(vfg_gen_wave,"wave")
+        vfg_make_and_save(vfg_gen_wave,"wave",self.directory)
         self._gen_progress = 1.0
     
 # ------------- begin vector field generation code ----------------- #
@@ -99,10 +99,10 @@ class VectorFieldGallery:
 HEIGHT = 1024
 WIDTH = 1024
 
-def vfg_make_and_save(gen_fn, name):
+def vfg_make_and_save(gen_fn, name, directory):
     # generates a vector field using the function provided
     # and saves it and its preview image to disk via its name
-    path = os.path.join(DIRECTORY,name)
+    path = os.path.join(directory,name)
     vf = VectorField(HEIGHT,WIDTH)
     vf = gen_fn(vf)
     vf.save(path,True)
