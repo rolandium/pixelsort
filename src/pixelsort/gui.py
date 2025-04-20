@@ -103,7 +103,8 @@ class GUI:
             with dpg.menu_bar():
                 with dpg.menu(label="File"):
                     dpg.add_menu_item(label="Open File", callback=lambda: dpg.show_item("getFile"), tag="menuItem_OpenFile")
-                    dpg.add_menu_item(label="Save Result", callback=lambda: dpg.show_item("getResultFolder"), tag="menuItem_SaveResult")
+                    dpg.add_menu_item(label="Save Result", callback=lambda: dpg.show_item("getResultFolder"), tag="menuItem_SaveResult", enabled=False)
+                    dpg.add_menu_item(label="Save Frames", callback=lambda: dpg.show_item("getFrameFolder"), tag="menuItem_SaveFrames", enabled=False)
                 with dpg.menu(label="Resources"):
                     dpg.add_menu_item(label="DearPyGUI Documentation", callback= lambda: dpg.show_documentation())
                     dpg.add_menu_item(label="Item Registry", callback= lambda: dpg.show_item_registry())
@@ -314,6 +315,9 @@ class GUI:
                     self.setProgressBar(1, "gen_fields")
                     self.vfgallery = None
                     self.set_input_fields_enabledstate(True)
+                    if self._currentResult is None: # i am so sorry
+                        dpg.disable_item("menuItem_SaveResult")
+                        dpg.disable_item("menuItem_SaveFrames")
             elif(self.smear_runner is not None): #exists
                 if(self.smear_runner.is_running()):
                     self.set_input_fields_enabledstate(False)
@@ -366,6 +370,7 @@ class GUI:
     def set_input_fields_enabledstate(self,enable):
         for tag in ["menuItem_OpenFile",
                     "menuItem_SaveResult",
+                    "menuItem_SaveFrames",
                     "button_GenerateVectorFields",
                     "button_MakeMask",
                     "button_SaveMask",
