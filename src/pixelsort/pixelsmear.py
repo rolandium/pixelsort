@@ -228,8 +228,6 @@ class PixelSmear:
             frame_rgba = rgba_clip.astype(np.uint8)
             comp = Image.alpha_composite(self.image.convert("RGBA"), Image.fromarray(frame_rgba, 'RGBA'))
             self.frames.append(comp)
-            if(not os.path.isdir("src/pixelsort/results/")):
-                os.mkdir("src/pixelsort/results/")
             comp.save(self.out_path.replace('.png', f'_frame_{t:02d}.png'))
 
         self.smear_stack = np.stack(smear_frames)

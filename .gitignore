@@ -6,4 +6,6 @@ assets/results
 src/pixelsort/mask
 src/pixelsort/results
 src/pixelsort/__pycache__
+build/
+dist/
 .vscode

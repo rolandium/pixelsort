@@ -284,6 +284,8 @@ class SmearRunner:
 
     def run(self):
         with self._lock:
+            if(not os.path.isdir(PATH_RESULTS)):
+                os.mkdir(PATH_RESULTS)
             self._smear = PixelSmear(self.imgPath, self.outPath, self.maskPath, num_steps=self.numSteps, 
                             dx_expr=self.dx_expr, dy_expr=self.dy_expr, doVF=self.doVF, vf=self.vf)
             self._runner = threading.Thread(target=self._runnerFn)

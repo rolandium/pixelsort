@@ -17,6 +17,7 @@ else:
     # print("OS != WINDOWS")
     OS_WIN = False
 
+ASSETS_PATH = "assets/"
 ICON_PATH = "assets/cpssevf_icon.ico"
 DIR_VECTORFIELDS = "assets/vector_fields/"
 
@@ -27,7 +28,10 @@ class GUI:
 
     # Constructor
     def __init__(self):
-        
+
+        if(not os.path.isdir(ASSETS_PATH)):
+            os.mkdir(ASSETS_PATH)
+
         self._currentFile = "Empty"
 
         # Holds the item number of the Operation
