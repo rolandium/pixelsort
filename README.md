@@ -80,3 +80,4 @@ General usage steps are as follows:
     - Because the initial vector field generation can take a long while, especially on weaker systems, do not panic if the progress bar seems stuck.
 - When resizing the window on Windows, DearPyGUI can sometimes not detect the size change, causing the GUI to become inactive.
     - A workaround is to resize the window again and seeing if the GUI is interactable.
+- On Windows, the window icon in the upper left does not appear when running a compiled executable.
