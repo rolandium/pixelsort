@@ -41,6 +41,7 @@ def showImage(imagePath, self):
 
     dpg.add_image("baseImg", width=w, height=h, parent="panel_BaseImg", pos=[x,y], tag="image_Base")
     self._loadedImages.setdefault("panel_BaseImg", {})["image_Base"] = (width,height)
+    dpg.set_value("tabBar_Images","tab_BaseImg")
 
 # Depending on the type of save, do the following
 def saveImage(self, folderPath, typeSave):
@@ -172,6 +173,7 @@ def showVF(sender, app_data, gui):
 
     dpg.add_image("vfImg", width=w , height=h, parent="panel_VectorField", pos=[x,y], tag="image_VF")
     gui._loadedImages.setdefault("panel_VectorField", {})["image_VF"] = (vfWidth, vfHeight)
+    dpg.set_value("tabBar_Images","tab_VFImg")
 
 def doSmear(self, sender):
 

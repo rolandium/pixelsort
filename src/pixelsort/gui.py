@@ -94,18 +94,18 @@ class GUI:
                     dpg.add_menu_item(label="Texture Registry", callback=self.showTexRegistries)
             
             # Where the images are painted
-            with dpg.child_window(label="image tabs", width=850, height=700,
+            with dpg.child_window(label="image tabs", width=850, height=680,
                                   #resizable_x=True, resizable_y=True,
                                   pos=[10,30], tag="window_ImageTabs"):
-                with dpg.tab_bar(label = "navigate"):
-                    with dpg.tab(label = "Base Image"):
-                        dpg.add_child_window(label = "originalImage", width=835, height=660, horizontal_scrollbar=True, tag="panel_BaseImg")
-                    with dpg.tab(label = "Mask"):
-                        dpg.add_child_window(label = "maskImage", width=835, height=660, horizontal_scrollbar=True, tag="panel_MaskImg")
-                    with dpg.tab(label = "Vector Field"):
-                        dpg.add_child_window(label = "vectorField", width=835, height=660, horizontal_scrollbar=True, tag="panel_VectorField")
-                    with dpg.tab(label = "Output Image"):
-                        dpg.add_child_window(label = "outputImage", width=835, height=660, horizontal_scrollbar=True, tag="panel_OutputImg")
+                with dpg.tab_bar(label = "navigate",tag="tabBar_Images"):
+                    with dpg.tab(label = "Base Image",tag="tab_BaseImg"):
+                        dpg.add_child_window(label = "originalImage", width=835, height=660, no_scrollbar=True, tag="panel_BaseImg")
+                    with dpg.tab(label = "Mask",tag="tab_MaskImg"):
+                        dpg.add_child_window(label = "maskImage", width=835, height=660, no_scrollbar=True, tag="panel_MaskImg")
+                    with dpg.tab(label = "Vector Field",tag="tab_VFImg"):
+                        dpg.add_child_window(label = "vectorField", width=835, height=660, no_scrollbar=True, tag="panel_VectorField")
+                    with dpg.tab(label = "Output Image",tag="tab_OutputImg"):
+                        dpg.add_child_window(label = "outputImage", width=835, height=660, no_scrollbar=True, tag="panel_OutputImg")
 
             # Operations window
             with dpg.child_window(label="Operations", width=400, height=700, pos=[870,30], tag="window_Operations"):
@@ -186,11 +186,11 @@ class GUI:
                     dpg.add_text("No mask exists.", pos=[0.68*dpg.get_item_width("Masking"), 0.90*dpg.get_item_height("Masking")], show=False, tag="text_NoMaskError")
 
                 # Transformation Window
-                with dpg.child_window(label="Transformations", width=380, height=590, pos=[10, 55], show=False, tag="Transformations"):
+                with dpg.child_window(label="Transformations", width=380, height=610, pos=[10, 55], show=False, tag="Transformations"):
                     
                     # Controls directions and allows user input for basic equations
                     with dpg.collapsing_header(label="Directions",default_open=True):
-                        with dpg.child_window(label="DirectionWindow", width=360, height=220, tag="Direction"):
+                        with dpg.child_window(label="DirectionWindow", width=360, height=200, tag="Direction"):
                             dpg.add_text("Select a direction: ", pos=[10,10])
                             directions = ["Left", "Right", "Up", "Down", "Custom", "None"]
                             dpg.add_combo(directions, label="directions", pos=[10, 30],
@@ -220,6 +220,12 @@ class GUI:
                             dpg.add_checkbox(tag="doVectorField",pos =[200, 60])
                             dpg.add_text("Note: this will override 'Direction' inputs", pos=[10, 80])
 
+                    with dpg.collapsing_header(label="Colour Warping Method", tag="collapsingheader_ColorWarpMethod",default_open=True):
+                        with dpg.child_window(label="ColorWarpingMethodWindow", width=360, height=60):
+                            dpg.add_text("Select the color warping method.", pos=[10,10])
+                            colorWarpTypes = ["Gradient Smear"]
+                            dpg.add_radio_button(colorWarpTypes, label="radiobutton_ColorWarpTypes", horizontal=True, pos=[10, 30], default_value="Gradient Smear")
+
                     # Takes in a number to be the max number of frames generated
                     with dpg.collapsing_header(label="Max Frames", tag="selectFrames",default_open=True):
                         with dpg.child_window(label="MaxFramesWindow", width=360, height=75):
@@ -232,14 +238,14 @@ class GUI:
 
                     # Sends the call to smear the image given all the above information
                     # Shows a message if no image has been loaded or if no smear exists    
-                    dpg.add_button(label="Apply Transformation", pos=[10, 0.94*dpg.get_item_height("Transformations")], 
+                    dpg.add_button(label="Apply Transformation", pos=[10, dpg.get_item_height("Transformations") - 30], 
                                callback=self.smear, tag="smear")
-                    dpg.add_text("No image selected.", pos=[10, 0.90*dpg.get_item_height("Transformations")], show=False, tag="text_SmearNoImageError")
-                    dpg.add_button(label="Save Output", pos=[0.76*dpg.get_item_width("Transformations"), 0.94*dpg.get_item_height("Transformations")], 
+                    dpg.add_text("No image selected.", pos=[10, dpg.get_item_height("Transformations") - 50], show=False, tag="text_SmearNoImageError")
+                    dpg.add_button(label="Save Output", pos=[0.76*dpg.get_item_width("Transformations"), dpg.get_item_height("Transformations") - 30], 
                                callback=lambda: dpg.show_item("text_SmearNoSmearError") if self._currentResult is None
                                  else dpg.show_item("getResultFolder"), tag="saveSmear")
                     dpg.add_text("No output exists.",
-                                pos=[0.68*dpg.get_item_width("Transformations"), 0.90*dpg.get_item_height("Transformations")], show=False, tag="text_SmearNoSmearError")
+                                pos=[0.68*dpg.get_item_width("Transformations"), dpg.get_item_height("Transformations") - 50], show=False, tag="text_SmearNoSmearError")
 
                 # Frame Selector Window
                 with dpg.child_window(label="Frame Selector", width=380, height=490, pos=[10, 55], show=False, tag="FrameSelector"):
@@ -319,6 +325,7 @@ class GUI:
                     stack_isSet = True
                     self.smear_runner = None
                     dpg.configure_item("selectedFrame", max_value = self._maxFrames)
+                    dpg.set_value("tabBar_Images","tab_OutputImg")
             dpg.render_dearpygui_frame()
         dpg.destroy_context()
 
@@ -458,6 +465,8 @@ class GUI:
             dpg.hide_item("text_NoMaskError")
             print("Masking: ", self._currentFile)
             self._maskPath = imageOperations.makeMask(self, sender)
+        # focus the mask tab
+        dpg.set_value("tabBar_Images","tab_MaskImg")
 
     # Enables the interaction of the custom degrees 
     # or user-inputted equations
