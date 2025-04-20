@@ -109,8 +109,6 @@ class PixelSmear:
                     self.positions[0, y, x] = [y, x]
 
         for t in range(1, self.num_steps):
-            #self.progress += (1/self.num_steps) * 0.33
-            #print(f"progress: {self.progress}", end='\r', flush=True)
             dx = float(self.dx_func(t))
             dy = float(self.dy_func(t))
             for y in range(self.height):
@@ -188,8 +186,6 @@ class PixelSmear:
         smear_frames = []
         canvas = np.zeros_like(self.accum_color)
         for t in range(self.num_steps - 1):
-            #self.progress += (1/self.num_steps) * 0.33
-            #print(f"progress: {self.progress}", end='\r', flush=True)
             self.accum_color.fill(0)
             self.accum_weight.fill(0)
             for y in range(self.height):

@@ -20,6 +20,9 @@ else:
 ICON_PATH = "assets/cpssevf_icon.ico"
 DIR_VECTORFIELDS = "assets/vector_fields/"
 
+COLOR_WHITE = [255,255,255,255]
+COLOR_GREY  = [150,150,150,255]
+
 class GUI:
 
     # Constructor
@@ -66,6 +69,14 @@ class GUI:
 
         dpg.create_context()
 
+        # Themeing for disabled/enabled buttons
+        with dpg.theme() as self.enabled_theme:
+            with dpg.theme_component(dpg.mvAll):
+                dpg.add_theme_color(dpg.mvThemeCol_Text, [255,255,255,255], category=dpg.mvThemeCat_Core)
+        with dpg.theme() as self.disabled_theme:
+            with dpg.theme_component(dpg.mvAll):
+                dpg.add_theme_color(dpg.mvThemeCol_Text, [150,150,150,255], category=dpg.mvThemeCat_Core)
+
         # Initialize registries where the images will be stored
         dpg.add_texture_registry(label="BaseImgRegistry", show=False, tag="registry_BaseImg")
         dpg.add_texture_registry(label="MaskImgRegistry", show=False, tag="registry_MaskImg")
@@ -91,8 +102,8 @@ class GUI:
             # The menu bar
             with dpg.menu_bar():
                 with dpg.menu(label="File"):
-                    dpg.add_menu_item(label="Open File", callback=lambda: dpg.show_item("getFile"))
-                    dpg.add_menu_item(label="Save Result", callback=lambda: dpg.show_item("getResultFolder"))
+                    dpg.add_menu_item(label="Open File", callback=lambda: dpg.show_item("getFile"), tag="menuItem_OpenFile")
+                    dpg.add_menu_item(label="Save Result", callback=lambda: dpg.show_item("getResultFolder"), tag="menuItem_SaveResult")
                 with dpg.menu(label="Resources"):
                     dpg.add_menu_item(label="DearPyGUI Documentation", callback= lambda: dpg.show_documentation())
                     dpg.add_menu_item(label="Item Registry", callback= lambda: dpg.show_item_registry())
@@ -182,12 +193,12 @@ class GUI:
                     # Sends the call to make the mask given all the above information
                     # Shows a message if no image has been loaded or if no mask exists
                     dpg.add_button(label="Create Mask", pos=[10, 0.94*dpg.get_item_height("Masking")], 
-                               callback=self.makeMask, tag="makeMask")
+                               callback=self.makeMask, tag="button_MakeMask")
                     dpg.add_text("No image selected.", pos=[10, 0.90*dpg.get_item_height("Masking")], show=False, color=color_red)
 
                     dpg.add_button(label="Save Mask", pos=[0.78*dpg.get_item_width("Masking"), 0.94*dpg.get_item_height("Masking")], 
                                callback=lambda: dpg.show_item(88) if self._maskPath == None else dpg.show_item("getMaskFolder"),
-                                 tag="saveMask")
+                                 tag="button_SaveMask")
                     dpg.add_text("No mask exists.", pos=[0.68*dpg.get_item_width("Masking"), 0.90*dpg.get_item_height("Masking")], show=False, tag="text_NoMaskError", color=color_red)
 
                 # Transformation Window
@@ -244,12 +255,12 @@ class GUI:
                     # Sends the call to smear the image given all the above information
                     # Shows a message if no image has been loaded or if no smear exists    
                     dpg.add_button(label="Apply Transformation", pos=[10, dpg.get_item_height("Transformations") - 30], 
-                               callback=self.smear, tag="smear")
+                               callback=self.smear, tag="button_ApplyTransformations")
                     dpg.add_text("No image selected.", pos=[10, dpg.get_item_height("Transformations") - 50], show=False, tag="text_SmearNoImageError", color=color_red)
                     dpg.add_text("No output exists.",
                                 pos=[0.68*dpg.get_item_width("Transformations"), dpg.get_item_height("Transformations") - 50], show=False, tag="text_SmearNoSmearError", color=color_red)
-                    dpg.add_button(label="Save Output", pos=[0.76*dpg.get_item_width("Transformations"), dpg.get_item_height("Transformations") - 30], 
-                               callback=self.handle_no_smear, user_data="getResultFolder", tag="saveSmear")
+                    dpg.add_button(label="Save Result", pos=[0.76*dpg.get_item_width("Transformations"), dpg.get_item_height("Transformations") - 30], 
+                               callback=self.handle_no_smear, user_data="getResultFolder", tag="button_SaveResult")
 
                 # Frame Selector Window
                 with dpg.child_window(label="Frame Selector", width=380, height=490, pos=[10, 55], show=False, tag="FrameSelector"):
@@ -261,7 +272,7 @@ class GUI:
                     dpg.add_text("No output exists.",
                                 pos=[0.68*dpg.get_item_width("FrameSelector"), 0.90*dpg.get_item_height("FrameSelector")], show=False, tag="text_FrameNoSmearError", color=color_red)
                     dpg.add_button(label="Save Frames", pos=[0.75*dpg.get_item_width("FrameSelector"), 0.94*dpg.get_item_height("FrameSelector")], 
-                               callback=self.handle_no_smear, user_data="getFrameFolder", tag="saveFrames")
+                               callback=self.handle_no_smear, user_data="getFrameFolder", tag="button_SaveFrames")
 
                 dpg.add_progress_bar(default_value=0, width=-1, overlay="0%", tag="smearProgress", pos=[7, dpg.get_item_height("window_Operations")-30])
 
@@ -297,12 +308,15 @@ class GUI:
             # very bad hack to get the progress bar working
             if(self.vfgallery is not None):
                 if(self.vfgallery.generation_is_running()):
+                    self.set_input_fields_enabledstate(False)
                     self.setProgressBar(self.vfgallery.get_generation_progress(), "gen_fields")
                 else: # is done
                     self.setProgressBar(1, "gen_fields")
                     self.vfgallery = None
+                    self.set_input_fields_enabledstate(True)
             elif(self.smear_runner is not None): #exists
                 if(self.smear_runner.is_running()):
+                    self.set_input_fields_enabledstate(False)
                     self.setProgressBar(self.smear_runner.get_progress(), "render_out")
                     stack_isSet = False
                 elif not stack_isSet: # is finished
@@ -329,6 +343,7 @@ class GUI:
                     self.smear_runner = None
                     dpg.configure_item("selectedFrame", max_value = self._maxFrames)
                     dpg.set_value("tabBar_Images","tab_OutputImg")
+                    self.set_input_fields_enabledstate(True)
             dpg.render_dearpygui_frame()
         dpg.destroy_context()
 
@@ -346,6 +361,21 @@ class GUI:
                 dpg.hide_item("text_FrameNoSmearError")
                 dpg.show_item("getFrameFolder") 
 
+
+
+    def set_input_fields_enabledstate(self,enable):
+        for tag in ["menuItem_OpenFile",
+                    "menuItem_SaveResult",
+                    "button_GenerateVectorFields",
+                    "button_MakeMask",
+                    "button_SaveMask",
+                    "button_ApplyTransformations",
+                    "button_SaveResult",
+                    "button_SaveFrames",
+                    "selectedFrame"]:
+            if(enable is not dpg.is_item_enabled(tag)):
+                #print(f"setting state enabled state of {tag} to {enable}")
+                dpg.configure_item(tag, enabled=enable)
 
     def on_viewport_resize(self, sender, app_data):
         """

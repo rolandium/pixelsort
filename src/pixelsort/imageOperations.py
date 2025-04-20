@@ -41,7 +41,7 @@ def showImage(imagePath, self):
 
     # print("trying to add to registry")
     w, h, x, y = get_scaling("panel_BaseImg",(width,height))
-    print(f"showImage | w={w} h={h} x={x} y={y}")
+    # print(f"showImage | w={w} h={h} x={x} y={y}")
 
     dpg.add_image("baseImg", width=w, height=h, parent="panel_BaseImg", pos=[x,y], tag="image_Base")
     self._loadedImages.setdefault("panel_BaseImg", {})["image_Base"] = (width,height)
@@ -226,25 +226,14 @@ def doSmear(self, sender):
     # Get the .npz file as well
     activateVF = dpg.get_value("doVectorField")
     if activateVF == True:
-        # vfImgPath = vfGal.get_preview_image(selectedVF)
         vecField = vfGal.get_vector_field(selectedVF)
-        
-        # vfWidth, vfHeight, _, vfData = dpg.load_image(vfImgPath)
 
-        # dpg.delete_item("registry_VF", children_only=True)
-        # dpg.delete_item("panel_VectorField", children_only=True)
-
-        # dpg.add_dynamic_texture(width=vfWidth, height=vfHeight, default_value=vfData, tag="vfImg", parent="registry_VF")
-        # dpg.add_image("vfImg", parent="panel_VectorField", pos=[10,10])
-
-    # Initialize variables for PixelSmear
     imgPath = self._currentFile
     if(not os.path.isdir(PATH_RESULTS)):
         os.mkdir(PATH_RESULTS)
-    outPath = os.path.join(PATH_RESULTS,"out.png")#'src/pixelsort/results/out.png' 
+    outPath = os.path.join(PATH_RESULTS,"out.png")
     maskPath = self._maskPath
     t = self._maxFrames
-    #smeared = PixelSmear(imgPath, outPath, maskPath, num_steps=int(t+1), dx_expr = strX, dy_expr = strY, doVF = activateVF, vf = vecField)
 
     self.smear_runner = SmearRunner(imgPath, outPath, maskPath, num_steps=int(t+1), dx_expr = strX, dy_expr = strY, doVF = activateVF, vf = vecField)
 
@@ -252,27 +241,6 @@ def doSmear(self, sender):
     dpg.delete_item("registry_OutputImg", children_only=True)
 
     self.smear_runner.run()
-
-    #self.poll_smear_handler = dpg.add_handler_registry(tag="poll_handler")
-    #dpg.add_handler(dpg.mvHandlerFrame, callback=poll_smear, user_data=self, parent="poll_handler")
-
-    #dpg.set_value("smearProgress", smeared.progress)
-    #dpg.configure_item("smearProgress", overlay=f"{smeared.progress}%")
-    
-    # Store all the frames into the registry
-    # frameNum = None
-    # for frame in range(t):
-    #     frameNum = str(frame)
-    #     smearFrame = smeared.frame_stack[frame]
-    #     smeared_data = np.asarray(smearFrame, dtype=np.float32)  # change data type to 32bit floats
-    #     texture_data = np.true_divide(smeared_data, 255.0)
-    #     imgHeight, imgWidth = smeared.height, smeared.width
-    #     dpg.add_raw_texture(width=imgWidth, height=imgHeight, default_value=texture_data, tag="frame"+frameNum, 
-    #                         parent="registry_OutputImg",format=dpg.mvFormat_Float_rgba)
-    
-    # dpg.add_image("frame"+frameNum, parent="panel_OutputImg", pos=[10,10])
-    # print("Finished")
-    # return smeared.frame_stack
 
 # Select a frame from Frame Selector
 def selectFrame(sender, app_data, gui):
