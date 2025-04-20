@@ -207,9 +207,9 @@ class GUI:
                             dpg.add_text("When 'None', set smear path in terms of t:", pos=[10,80])
                             dpg.add_text("+: Add, -: Subtract, *: Multiply,", pos=[10,100])
                             dpg.add_text("/: Divide, **: Power", pos=[10, 120])
-                            dpg.add_text("X equation:", pos=[10,140])
+                            dpg.add_text("dX equation:", pos=[10,140])
                             dpg.add_input_text(tag="stringX", pos=[100,140], width=200, enabled=False, default_value="5*t")
-                            dpg.add_text("Y equation:", pos=[10,165])
+                            dpg.add_text("dY equation:", pos=[10,165])
                             dpg.add_input_text(tag="stringY", pos=[100,165], width=200, enabled=False, default_value="5*t")
                     
                     # Selects a preset vector field and applies if it the user likes
