@@ -4,6 +4,8 @@ Base Image           |  Gradient Smear via Vector Field (Orbit, 25 Frames)
 :-------------------------:|:-------------------------:
 | ![image of mount everest, shutterstock 1589688670](samples/base_images/mountains.png) | ![orbit smear of the image](samples/out_images/mountains_orbitsmear.png) |
 
+Term project for [CMPT461: Computational Photography and Image Manipulation](https://yaksoy.github.io/cpim/)
+
 While most pixel sorters solve for the problem of sorted straight lines across the image, the domain of curved and other non-straight lines is not well defined. This project is an investigation into one particular way of pixelsorting an image using defined equations for dx and dy, or through per-pixel vector fields.
 
 This is delivered using a DearPyGUI interface that allows the user to load in an image, adjust masking settings, define their pixel line transformations, and finally sort[^1] an image. 
@@ -38,3 +40,7 @@ poetry run python .\src\pixelsort\main.py
 ## Usage
 
 **explain general usage here**
+
+## Known Issues
+
+**any known issues here**
