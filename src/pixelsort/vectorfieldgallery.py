@@ -11,6 +11,9 @@ class VectorFieldGallery:
     Also provides a function to generate the vector fields in a background thread
     """
     def __init__(self, directory=DIRECTORY):
+        # make the vector field directory if it does not exist.
+        if(not os.path.isdir(DIRECTORY)):
+            os.mkdir(DIRECTORY)
         self.directory = directory
         self.index = {}
         self._scan_directory()
@@ -99,8 +102,6 @@ WIDTH = 1024
 def vfg_make_and_save(gen_fn, name):
     # generates a vector field using the function provided
     # and saves it and its preview image to disk via its name
-    if(not os.path.isdir(DIRECTORY)):
-        os.mkdir(DIRECTORY)
     path = os.path.join(DIRECTORY,name)
     vf = VectorField(HEIGHT,WIDTH)
     vf = gen_fn(vf)
