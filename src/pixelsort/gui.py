@@ -66,6 +66,9 @@ class GUI:
         # also hold a vfg for rendering vector fields
         self.vfgallery = None
 
+        # hold input parameters for later recording
+        self.params = {}
+
         self._initDPG()
 
     def _initDPG(self):

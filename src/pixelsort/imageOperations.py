@@ -1,7 +1,8 @@
 import dearpygui.dearpygui as dpg
 import numpy as np
 from PIL import Image
-import os, threading
+import os, threading, json
+from datetime import datetime
 from pixelsort.masking import Mask
 from pixelsort.vectorfield import VectorField
 from pixelsort.vectorfieldgallery import VectorFieldGallery
@@ -86,6 +87,14 @@ def makeMask(self, sender):
     doBox = dpg.get_value(maskContainer[1][12])
     numBoxes = self._numBox
     boxLoc = []
+
+    self.params['typeMask'] = typeMask
+    self.params['minThresh'] = minThresh
+    self.params['maxThresh'] = maxThresh
+    self.params["doGaussian"] = doGaussian
+    self.params['GaussianStrength'] = gauss_strength
+    self.params["numBoxes"] = numBoxes
+    
     if doBox == True:
         for box in range(numBoxes):
             boxKey = str(box+1)
@@ -103,13 +112,21 @@ def makeMask(self, sender):
             bbox = np.array([
                 [topLeftY, topLeftX, botRightY, botRightX]
             ])
-
+            self.params[f"box{box}"] = {
+                'topLeftX':topLeftX,
+                'topLeftY':topLeftY,
+                'bottomRightX':botRightX,
+                'bottomRightY':botRightY
+            }
             boxLoc.append(bbox)
 
         boxLoc = np.concatenate(boxLoc, axis=0)
-
     invertBox = dpg.get_value(maskContainer[1][29])
+
+    self.params["invertBox"] = invertBox
     
+    
+
     # Send into Mask function
     im = Image.open(self._currentFile)
     mask = Mask(im, doGaussian, threshold, doBox, boxLoc, invertBox)
@@ -161,7 +178,7 @@ def showVF(sender, app_data, gui):
     selectedVF = dpg.get_value(vfHeader[1][1])
     if selectedVF == "Chaotic Spiral":
         selectedVF = "chaotic_spiral"
-    
+
     selectedVF = selectedVF.lower()
     vfImgPath = vfGal.get_preview_image(selectedVF)
     
@@ -228,12 +245,24 @@ def doSmear(self, sender):
     if activateVF == True:
         vecField = vfGal.get_vector_field(selectedVF)
 
+    self.params['direction_selection'] = direction
+    self.params['dX'] = strX
+    self.params['dY'] = strY
+    self.params['doVectorField'] = activateVF
+    self.params['selectedVectorField'] = selectedVF
+
     imgPath = self._currentFile
     if(not os.path.isdir(PATH_RESULTS)):
         os.mkdir(PATH_RESULTS)
-    outPath = os.path.join(PATH_RESULTS,"out.png")
+    now = datetime.now()
+    datetime_string = now.strftime("%Y%m%d%H%M%S")
+    outPath = os.path.join(PATH_RESULTS,f"{datetime_string}_out.png")
     maskPath = self._maskPath
     t = self._maxFrames
+
+    self.params['numFrames'] = t
+    with open(outPath.replace('.png','_params.json'), 'w') as f:
+        json.dump(self.params,f,indent=4)
 
     self.smear_runner = SmearRunner(imgPath, outPath, maskPath, num_steps=int(t+1), dx_expr = strX, dy_expr = strY, doVF = activateVF, vf = vecField)
 

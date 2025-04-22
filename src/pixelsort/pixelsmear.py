@@ -228,8 +228,9 @@ class PixelSmear:
             frame_rgba = rgba_clip.astype(np.uint8)
             comp = Image.alpha_composite(self.image.convert("RGBA"), Image.fromarray(frame_rgba, 'RGBA'))
             self.frames.append(comp)
-            comp.save(self.out_path.replace('.png', f'_frame_{t:02d}.png'))
+            comp.save(self.out_path.replace('.png', f'__frame_{t:02d}.png'))
 
+        
         self.smear_stack = np.stack(smear_frames)
         self.frame_stack = np.stack([np.asarray(f) for f in self.frames])
         # smear.frames[t] to get certain t slides composited image
@@ -239,6 +240,16 @@ class PixelSmear:
     def run(self):
         self.progress = 0.0
         mask = Image.open(self.mask_path)
+
+        # save additional parameter information
+
+        mask.save(self.out_path.replace('.png','_mask.png'))
+        if(self.usingVF):
+            vf = self.vf.output_arrow_image(show_image=False,hue=False)
+            vf.save(self.out_path.replace('.png','_vectorfield.png'))
+        baseimg = Image.open(self.img_path)
+        baseimg.save(self.out_path.replace('.png','_baseimg.png'))        
+
         mask = np.array(mask)
         self.warp_positions(mask)
         self.progress = 1/3
@@ -246,6 +257,10 @@ class PixelSmear:
         self.progress = 2/3
         self.render()
         self.progress = 1.0
+
+        # save result (final frame)
+        result = Image.fromarray(self.frame_stack[-1,...])
+        result.save(self.out_path)
 
 
 if __name__ == "__main__":
