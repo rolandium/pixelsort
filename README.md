@@ -6,6 +6,8 @@ Base Image           |  Our Result
 
 Term project for [CMPT461: Computational Photography and Image Manipulation](https://yaksoy.github.io/cpim/)
 
+[Video Presentation](https://youtu.be/xdps2UoWjYk)
+
 While most pixel sorters solve for the problem of sorted straight lines across the image, the domain of curved and other non-straight lines is not well defined. This project is an investigation into one particular way of pixelsorting an image using defined equations for dx and dy, or through per-pixel vector fields.
 
 This is delivered using a DearPyGUI interface that allows the user to load in an image, adjust masking settings, define their pixel line transformations, and finally sort[^1] an image. 
