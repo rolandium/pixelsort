@@ -207,8 +207,8 @@ def doSmear(self, sender):
         strY = str(-1.0)
     if direction == "Custom":
         userDeg = dpg.get_value(directHeader[1][3])
-        strX = str(np.cos((pi/180)*userDeg))
-        strY = str(np.sin((pi/180)*userDeg))
+        strX = str(np.cos((pi/180)*-userDeg))
+        strY = str(np.sin((pi/180)*-userDeg))
     if direction == "None":
         strX = dpg.get_value(directHeader[1][8])
         strY = dpg.get_value(directHeader[1][10])
@@ -288,6 +288,8 @@ class SmearRunner:
                 os.mkdir(PATH_RESULTS)
             self._smear = PixelSmear(self.imgPath, self.outPath, self.maskPath, num_steps=self.numSteps, 
                             dx_expr=self.dx_expr, dy_expr=self.dy_expr, doVF=self.doVF, vf=self.vf)
+            if(self.doVF): # scale vf to image dimensions, ignoring original aspect ratio.
+                self._smear.vf.resize(self._smear.height,self._smear.width)
             self._runner = threading.Thread(target=self._runnerFn)
             self._runner.start()
 

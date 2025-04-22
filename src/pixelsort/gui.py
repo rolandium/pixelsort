@@ -244,7 +244,7 @@ class GUI:
                     with dpg.collapsing_header(label="Colour Warping Method", tag="collapsingheader_ColorWarpMethod",default_open=True):
                         with dpg.child_window(label="ColorWarpingMethodWindow", width=360, height=60):
                             dpg.add_text("Select the color warping method.", pos=[10,10])
-                            colorWarpTypes = ["Gradient Smear"]
+                            colorWarpTypes = ["Linear Gradient Smear"]
                             dpg.add_radio_button(colorWarpTypes, label="radiobutton_ColorWarpTypes", horizontal=True, pos=[10, 30], default_value="Gradient Smear")
 
                     # Takes in a number to be the max number of frames generated

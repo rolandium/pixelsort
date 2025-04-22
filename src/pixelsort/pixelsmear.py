@@ -241,9 +241,9 @@ class PixelSmear:
         mask = Image.open(self.mask_path)
         mask = np.array(mask)
         self.warp_positions(mask)
-        self.progress = 0.33
+        self.progress = 1/3
         self.smear_colors()
-        self.progress = 0.66
+        self.progress = 2/3
         self.render()
         self.progress = 1.0
 

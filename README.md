@@ -1,6 +1,6 @@
 # Curved Pixel Sorting via Simple Equations and Vector Fields
 
-Base Image           |  Gradient Smear via Vector Field (Orbit, 25 Frames)
+Base Image           |  Our Result
 :-------------------------:|:-------------------------:
 | ![image of mount everest, shutterstock 1589688670](samples/base_images/mountains.png) | ![orbit smear of the image](samples/out_images/mountains_orbitsmear.png) |
 
@@ -72,12 +72,20 @@ General usage steps are as follows:
 
 ## Examples
 
-***Put more samples here***
+Base Image           |  Output Image
+:-------------------------:|:-------------------------:
+| Carina Nebula | Vector Field: Explosion, 30 Frames| 
+| ![nebula](samples/base_images/nebula.png) | ![explosion smear of the nebula](samples/out_images/nebula_explosion.png) |
+| Andromeda Galaxy | Direction: Left, 30 Frames |
+| ![galaxy](samples/base_images/galaxy.png) | ![output](samples/out_images/galaxy_leftsmear.png)|
+| Mount Everest | Vector Field: Orbit, 30 Frames |
+| ![image of mount everest, shutterstock 1589688670](samples/base_images/mountains.png) | ![orbit smear of the image](samples/out_images/mountains_orbitsmear.png) |
 
 ## Known Issues
 
 - Current implementation is unoptimized and runs very slowly.
     - Because the initial vector field generation can take a long while, especially on weaker systems, do not panic if the progress bar seems stuck.
+    - To avoid having a ten hour rendering step, consider downscaling your images before using them in the program.
 - When resizing the window on Windows, DearPyGUI can sometimes not detect the size change, causing the GUI to become inactive.
     - A workaround is to resize the window again and seeing if the GUI is interactable.
 - On Windows, the window icon in the upper left does not appear when running a compiled executable.
