@@ -2,7 +2,7 @@
 
 Base Image           |  Our Result
 :-------------------------:|:-------------------------:
-| ![image of mount everest, shutterstock 1589688670](samples/base_images/mountains.png) | ![orbit smear of the image](samples/out_images/mountains_orbitsmear.png) |
+| ![image of a mountain: https://www.pexels.com/photo/snow-covered-mountains-9253462/](samples/base_images/mountains.png) | ![orbit smear of the image](samples/out_images/mountains_orbit.png) |
 
 Term project for [CMPT461: Computational Photography and Image Manipulation](https://yaksoy.github.io/cpim/)
 
@@ -77,11 +77,13 @@ General usage steps are as follows:
 Base Image           |  Output Image
 :-------------------------:|:-------------------------:
 | Carina Nebula | Vector Field: Explosion, 30 Frames| 
-| ![nebula](samples/base_images/nebula.png) | ![explosion smear of the nebula](samples/out_images/nebula_explosion.png) |
-| Andromeda Galaxy | Direction: Left, 30 Frames |
-| ![galaxy](samples/base_images/galaxy.png) | ![output](samples/out_images/galaxy_leftsmear.png)|
-| Mount Everest | Vector Field: Orbit, 30 Frames |
-| ![image of mount everest, shutterstock 1589688670](samples/base_images/mountains.png) | ![orbit smear of the image](samples/out_images/mountains_orbitsmear.png) |
+| ![Carina Nebula: https://en.wikipedia.org/wiki/Carina_Nebula#/media/File:Carina_Nebula_by_Harel_Boren_(151851961,_modified).jpg](samples/base_images/nebula.png) | ![explosion smear of the nebula](samples/out_images/nebula_explosion.png) |
+| Cabin | Vector Field: Chaotic Spiral, 20 Frames |
+| ![cottages: https://unsplash.com/photos/a-cabin-in-the-woods-under-a-night-sky-jXeGfIWCXoM](samples/base_images/cottages.png) | ![output](samples/out_images/cottage_chaoticspiral.png)|
+| San Fransisco | Vector Field: Waves, 20 Frames |
+| ![City: https://unsplash.com/photos/city-with-high-rise-buildings-during-night-time-iywEI5ZCVxY](samples/base_images/sanfran.png) | ![orbit smear of the image](samples/out_images/sanfran_waves.png)|
+| Mountain | Vector Field: Orbit, 25 Frames|
+| ![image of a mountain: https://www.pexels.com/photo/snow-covered-mountains-9253462/](samples/base_images/mountains.png) | ![orbit smear of the image](samples/out_images/mountains_orbit.png) |
 
 ## Known Issues
 
